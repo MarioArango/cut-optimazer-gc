@@ -80,11 +80,17 @@ details.book.has-active { border-color: var(--accent); }
 .stage svg { width: 100%; height: auto; display: block; }
 .legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--muted); padding: 0 12px 12px; }
 .legend i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 4px; border-radius: 2px; }
-.detail { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+/* Fixed geometry: the detail card keeps its height whatever it shows, so the
+   sequence below never shifts under the pointer (which used to make hovering
+   rows retrigger each other and flicker). */
+.detail { min-width: 0; display: flex; flex-direction: column; gap: 12px;
+  position: sticky; top: 68px; align-self: start; height: calc(100vh - 80px); }
+.detail .info { flex: 0 0 300px; height: 300px; overflow: auto; }
+.detail .tree-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .info dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 0; font-size: 13px; }
 .info dt { color: var(--muted); }
 .info dd { margin: 0; font-variant-numeric: tabular-nums; word-break: break-word; }
-.tree { overflow: auto; max-height: calc(100vh - 420px); font-size: 13px; }
+.tree { overflow: auto; flex: 1 1 auto; min-height: 0; font-size: 13px; }
 .tree table { width: 100%; border-collapse: collapse; }
 .tree td, .tree th { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tree td:last-child { white-space: normal; min-width: 120px; }
@@ -157,7 +163,7 @@ table.grid label.chk { display: inline-flex; gap: 6px; align-items: center; whit
 .cfg legend { color: var(--muted); font-size: 12px; padding: 0 4px; }
 .cfg small { color: var(--muted); font-weight: 400; }
 #print-area { display: none; }
-@media (max-width: 1200px) { .app { grid-template-columns: 260px minmax(0, 1fr); } .detail { grid-column: 1 / -1; } .tree { max-height: none; } }
+@media (max-width: 1200px) { .app { grid-template-columns: 260px minmax(0, 1fr); } .detail { grid-column: 1 / -1; position: static; height: auto; } .detail .tree-card { display: block; } .tree { max-height: 480px; } }
 @media (max-width: 760px) {
   .app { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; }
   .boards { max-height: 240px; }
@@ -309,7 +315,7 @@ table.grid label.chk { display: inline-flex; gap: 6px; align-items: center; whit
       <h2 class="section-title" id="info-title">Detalle</h2>
       <div id="info"><p style="color:var(--muted);margin:0">Pasa el cursor sobre una pieza, un retal o una fila de la secuencia para ver qué cortes la producen.</p></div>
     </section>
-    <section class="card">
+    <section class="card tree-card">
       <div class="pad" style="padding-bottom:4px"><h2 class="section-title">Secuencia de cortes</h2></div>
       <div class="tree" id="tree"></div>
     </section>

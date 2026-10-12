@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "job_id": "geometria-corte-invalido-001",
+  "operation": {
+    "type": "geometry_split",
+    "rect": { "x": 0, "y": 0, "width": 100, "height": 100 },
+    "direction": "vertical",
+    "at": 98,
+    "kerf": 3
+  }
+}

@@ -1,0 +1,1329 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planos de corte</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #1d2330; --muted: #677085; --line: #dde1e8;
+  --accent: #2563eb; --accent-ink: #ffffff; --board: #f3ead9; --trim: #d9cdb6;
+  --remnant: #c9ced8; --remnant-ink: #4b5363; --hl: #f59e0b; --bad: #dc2626; --good: #15803d;
+  --l1: #dc2626; --l2: #2563eb; --l3: #16a34a; --l4: #d97706; --l5: #9333ea; --l6: #0891b2;
+  --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151c; --panel: #1b2029; --ink: #e6e9ef; --muted: #98a1b3; --line: #2c3340;
+    --accent: #60a5fa; --accent-ink: #0b1220; --board: #3a3427; --trim: #2a261d;
+    --remnant: #3b4250; --remnant-ink: #c3cad6; --hl: #fbbf24; --bad: #f87171; --good: #4ade80;
+    --l1: #f87171; --l2: #60a5fa; --l3: #4ade80; --l4: #fbbf24; --l5: #c084fc; --l6: #22d3ee;
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151c; --panel: #1b2029; --ink: #e6e9ef; --muted: #98a1b3; --line: #2c3340;
+  --accent: #60a5fa; --accent-ink: #0b1220; --board: #3a3427; --trim: #2a261d;
+  --remnant: #3b4250; --remnant-ink: #c3cad6; --hl: #fbbf24; --bad: #f87171; --good: #4ade80;
+  --l1: #f87171; --l2: #60a5fa; --l3: #4ade80; --l4: #fbbf24; --l5: #c084fc; --l6: #22d3ee;
+  --shadow: none;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: default; }
+header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+header h1 { font-size: 16px; margin: 0 12px 0 0; white-space: nowrap; }
+header .spacer { flex: 1; }
+header label.toggle { display: inline-flex; gap: 4px; align-items: center; color: var(--muted); font-size: 13px; white-space: nowrap; }
+.app { display: grid; grid-template-columns: 300px minmax(0, 1fr) 340px; gap: 12px; padding: 12px 16px; min-height: calc(100% - 56px); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+.side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.section-title { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+.pad { padding: 12px; }
+.kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.kpi { border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+.kpi b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+.kpi span { font-size: 12px; color: var(--muted); }
+.bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 4px; }
+.bar > i { display: block; height: 100%; background: var(--accent); }
+.boards { overflow: auto; max-height: calc(100vh - 380px); display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+.board-item { display: grid; grid-template-columns: 64px 1fr; gap: 8px; align-items: center; padding: 6px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: var(--panel); text-align: left; }
+.board-item.active { border-color: var(--accent); outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+.board-item svg { width: 64px; height: auto; display: block; }
+.board-item .meta, details.book .meta { font-size: 12px; color: var(--muted); }
+.board-item .title, details.book .title { font-weight: 600; }
+.badge { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); margin-left: 4px; }
+.main { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; }
+.toolbar .title { font-weight: 600; margin-right: auto; }
+.stage { padding: 12px; overflow: auto; position: relative; }
+.stack-badge { position: absolute; top: 18px; right: 18px; display: flex; align-items: baseline; gap: 6px; padding: 4px 10px;
+  border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25); pointer-events: none; }
+.stack-badge small { font-size: 12px; font-weight: 500; opacity: .85; }
+details.book { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+details.book > summary { list-style: none; display: grid; grid-template-columns: 64px 1fr auto; gap: 8px; align-items: center; padding: 6px; cursor: pointer; }
+details.book > summary::-webkit-details-marker { display: none; }
+details.book > summary::after { content: "▸"; color: var(--muted); transition: transform .15s; }
+details.book[open] > summary::after { transform: rotate(90deg); }
+details.book > summary svg { width: 64px; height: auto; display: block; }
+details.book.has-active { border-color: var(--accent); }
+.book-kids { display: flex; flex-direction: column; gap: 4px; padding: 0 6px 6px 22px; border-top: 1px dashed var(--line); padding-top: 6px; }
+.book-kids .board-item { grid-template-columns: 1fr auto; padding: 5px 8px; }
+.pos { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent); }
+.stage svg { width: 100%; height: auto; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--muted); padding: 0 12px 12px; }
+.legend i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 4px; border-radius: 2px; }
+.detail { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.info dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 0; font-size: 13px; }
+.info dt { color: var(--muted); }
+.info dd { margin: 0; font-variant-numeric: tabular-nums; word-break: break-word; }
+.tree { overflow: auto; max-height: calc(100vh - 420px); font-size: 13px; }
+.tree table { width: 100%; border-collapse: collapse; }
+.tree td, .tree th { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tree td:last-child { white-space: normal; min-width: 120px; }
+.tree th { position: sticky; top: 0; background: var(--panel); font-size: 12px; color: var(--muted); font-weight: 500; }
+.tree tr { cursor: pointer; }
+.tree tr:hover td, .tree tr.hl td { background: color-mix(in srgb, var(--hl) 18%, transparent); }
+.lvl { display: inline-block; min-width: 26px; font-weight: 600; }
+.empty { display: grid; place-items: center; min-height: 60vh; text-align: center; color: var(--muted); padding: 24px; }
+.empty .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 32px; max-width: 560px; }
+.empty.dragging .drop { border-color: var(--accent); color: var(--ink); }
+.warn { color: var(--bad); font-size: 12px; }
+dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); width: min(760px, calc(100vw - 32px)); padding: 16px; }
+dialog::backdrop { background: rgba(0,0,0,.4); }
+dialog textarea { width: 100%; height: 50vh; font: 12px/1.4 ui-monospace, Menlo, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+dialog .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+dialog input[type=password] { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+/* SVG */
+.p-rect { stroke: rgba(0,0,0,.45); stroke-width: 1; vector-effect: non-scaling-stroke; cursor: pointer; }
+.r-rect { stroke: var(--remnant-ink); stroke-width: 1; vector-effect: non-scaling-stroke; stroke-dasharray: 4 3; cursor: pointer; }
+.cut { stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.cut.trim { stroke: var(--muted); stroke-dasharray: 6 4; stroke-width: 1; }
+.cut.edge { stroke-dasharray: 2 3; opacity: .6; }
+.cut.hl { stroke: var(--hl) !important; stroke-width: 4; opacity: 1; }
+.region-hl { fill: var(--hl); fill-opacity: .22; stroke: var(--hl); stroke-width: 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+.p-rect.hl, .r-rect.hl { stroke: var(--hl); stroke-width: 3; }
+.lbl { fill: #1d2330; pointer-events: none; font-family: system-ui, sans-serif; }
+.rlbl { fill: var(--remnant-ink); pointer-events: none; font-family: system-ui, sans-serif; }
+.cutno { font-family: system-ui, sans-serif; pointer-events: none; font-weight: 700; }
+/* tabs + project editor */
+.tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-right: 8px; }
+.tabs button { border: 0; border-radius: 0; padding: 6px 14px; background: transparent; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+body[data-view="project"] .plans-only { display: none !important; }
+body[data-view="plans"] #project { display: none !important; }
+body[data-view="project"] #empty, body[data-view="project"] #app { display: none !important; }
+.project { max-width: 1180px; margin: 0 auto; padding: 12px 16px 48px; display: flex; flex-direction: column; gap: 12px; }
+.pbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px; }
+.pbar input.pname { flex: 1 1 260px; min-width: 0; font-size: 16px; font-weight: 600; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.pbar .gear { font-size: 18px; line-height: 1; padding: 6px 10px; }
+.pbar .go { font-size: 15px; padding: 8px 18px; font-weight: 600; }
+.grid-wrap { overflow-x: auto; }
+table.grid { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+table.grid th { text-align: left; font-size: 12px; font-weight: 500; color: var(--muted); padding: 6px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.grid td { padding: 3px 4px; border-bottom: 1px solid var(--line); }
+table.grid td.idx { color: var(--muted); width: 32px; text-align: right; padding-right: 8px; }
+table.grid input, table.grid select { width: 100%; min-width: 64px; padding: 6px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; }
+table.grid input:hover, table.grid select:hover { border-color: var(--line); }
+table.grid input:focus, table.grid select:focus { border-color: var(--accent); outline: none; background: var(--bg); }
+table.grid input.num { text-align: right; width: 112px; }
+table.grid input[data-key="name"] { width: 300px; }
+table.grid select.veta { width: 72px; min-width: 0; }
+table.grid select.mat { width: 240px; }
+table.grid th.n { text-align: right; padding-right: 14px; }
+table.grid .bad { border-color: var(--bad) !important; background: color-mix(in srgb, var(--bad) 8%, transparent); }
+table.grid td.del { width: 36px; text-align: center; }
+table.grid td.del button { border: 0; background: transparent; color: var(--muted); font-size: 16px; padding: 2px 8px; }
+table.grid td.del button:hover { color: var(--bad); }
+table.grid label.chk { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; font-size: 13px; padding: 0 6px; }
+.card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; padding: 12px 12px 4px; }
+.card-head .section-title { margin: 0; }
+.card-head .hint { color: var(--muted); font-size: 12px; }
+.card-foot { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 12px 12px; color: var(--muted); font-size: 13px; }
+.card-foot b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.msgs { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.msgs .warn::before { content: "⚠ "; }
+.cfg { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 16px; margin: 8px 0; }
+.cfg label.f { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.cfg label.f input, .cfg label.f select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
+.cfg fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.cfg legend { color: var(--muted); font-size: 12px; padding: 0 4px; }
+.cfg small { color: var(--muted); font-weight: 400; }
+#print-area { display: none; }
+@media (max-width: 1200px) { .app { grid-template-columns: 260px minmax(0, 1fr); } .detail { grid-column: 1 / -1; } .tree { max-height: none; } }
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; }
+  .boards { max-height: 240px; }
+  header h1 { width: 100%; }
+}
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  :root:not([data-theme="none"]), :root[data-theme] {
+    --board: #f3ead9; --trim: #d9cdb6; --remnant: #e3e6ec; --remnant-ink: #4b5363; --muted: #677085;
+    --l1: #dc2626; --l2: #2563eb; --l3: #16a34a; --l4: #d97706; --l5: #9333ea; --l6: #0891b2;
+  }
+  body { background: #fff; color: #000; }
+  header, .app, dialog, #empty { display: none !important; }
+  #print-area { display: block; }
+  .print-page { page-break-after: always; break-after: page; }
+  .print-page h2 { font-size: 14px; margin: 0 0 4px; }
+  .print-page .pmeta { font-size: 11px; margin-bottom: 6px; }
+  .print-page svg { width: 100%; max-height: 120mm; }
+  .print-page .pcuts { columns: 3; column-gap: 8mm; font-size: 9px; line-height: 1.35; margin: 6px 0 0; padding: 0; list-style: none; font-variant-numeric: tabular-nums; }
+  .print-page .pcuts li { break-inside: avoid; display: grid; grid-template-columns: 7mm 9mm 19mm 11mm 1fr; border-bottom: 1px solid #ddd; }
+  .print-page .pcuts li.h { font-weight: 700; border-bottom: 1px solid #000; }
+  .lbl { fill: #000; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Planos de corte</h1>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-project" aria-selected="true">Proyecto</button>
+    <button role="tab" id="tab-plans" aria-selected="false">Planos</button>
+  </div>
+  <button class="primary plans-only" id="btn-open">Abrir JSON…</button>
+  <button class="plans-only" id="btn-paste">Pegar JSON</button>
+  <button class="plans-only" id="btn-optimize">Optimizar JSON…</button>
+  <select id="sel-record" class="plans-only" hidden aria-label="Material"></select>
+  <span class="spacer"></span>
+  <label class="toggle plans-only"><input type="checkbox" id="opt-labels" checked> Etiquetas</label>
+  <label class="toggle plans-only"><input type="checkbox" id="opt-cutno"> N.º de corte</label>
+  <label class="toggle plans-only"><input type="checkbox" id="opt-remnants" checked> Medidas retal</label>
+  <button class="plans-only" id="btn-download" disabled>Descargar JSON</button>
+  <button class="plans-only" id="btn-print" disabled>Imprimir planos</button>
+  <button id="btn-theme" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
+  <input type="file" id="file" accept=".json,.txt,application/json" hidden>
+</header>
+
+<section id="project" class="project">
+  <div class="card pbar">
+    <input class="pname" id="p-name" placeholder="Nombre del proyecto" aria-label="Nombre del proyecto" maxlength="60">
+    <button class="gear" id="btn-config" title="Configuración" aria-label="Configuración">⚙</button>
+    <button id="btn-import">Importar entrada…</button>
+    <button id="btn-export">Descargar entrada</button>
+    <button id="btn-new">Nuevo</button>
+    <button class="primary go" id="btn-run">Optimizar</button>
+    <input type="file" id="import-file" accept=".json,application/json" hidden>
+  </div>
+  <div class="msgs" id="run-msgs" hidden></div>
+
+  <section class="card">
+    <div class="card-head"><h2 class="section-title">Materiales</h2>
+      <span class="hint">Medidas del tablero en mm. Con veta: la veta corre a lo largo del <b>largo</b> del tablero.</span></div>
+    <div class="grid-wrap"><table class="grid" id="mat-table">
+      <thead><tr><th></th><th style="min-width:220px">Nombre</th><th class="n">Largo (mm)</th><th class="n">Ancho (mm)</th><th class="n">Espesor (mm)</th><th class="n">Disponibles</th><th class="n" title="El optimizador compara el costo de los tableros con el de los cortes: sin precio, puede preferir menos cortes a menos tableros.">Precio tablero</th><th>Veta</th><th></th></tr></thead>
+      <tbody></tbody></table></div>
+    <div class="card-foot"><button id="add-mat">+ Agregar material</button></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2 class="section-title">Piezas</h2>
+      <span class="hint">Veta <b>L</b>: corre a lo largo del ancho de la pieza (paralela al largo del tablero) · <b>A</b>: a lo largo del alto · vacío: sin veta, puede rotar.
+      Puedes pegar filas desde Excel (Cantidad, Ancho, Alto, Veta). Enter baja a la fila siguiente.</span></div>
+    <div class="grid-wrap"><table class="grid" id="part-table">
+      <thead><tr><th>#</th><th class="mat-col">Material</th><th class="n">Cantidad</th><th class="n">Ancho (mm)</th><th class="n">Alto (mm)</th><th>Veta</th><th></th></tr></thead>
+      <tbody></tbody></table></div>
+    <div class="card-foot"><button id="add-part">+ Agregar pieza</button><span id="part-summary"></span></div>
+    <div class="msgs" id="part-msgs"></div>
+  </section>
+</section>
+
+<dialog id="dlg-config">
+  <h2 class="section-title">Configuración de la optimización</h2>
+  <div class="cfg">
+    <label class="f">Ancho de sierra (mm)<input id="c-kerf" inputmode="decimal"></label>
+    <label class="f">Saneado por lado (mm)<input id="c-trim" inputmode="decimal"></label>
+    <label class="f">Pieza / franja mínima (mm)<input id="c-min" inputmode="decimal"></label>
+    <label class="f">Largo máximo de corte (mm) <small>vacío = largo del tablero</small><input id="c-maxcut" inputmode="decimal"></label>
+    <fieldset><legend>Patrones de corte</legend>
+      <label><input type="checkbox" id="c-two"> 2 niveles (V-H, H-V)</label>
+      <label><input type="checkbox" id="c-three"> 3 niveles (V-H-V, H-V-H)</label>
+    </fieldset>
+    <fieldset><legend>Apilado (libros)</legend>
+      <label><input type="checkbox" id="c-stack"> Apilar tableros con el mismo patrón</label>
+      <label class="f">Máx. tableros por libro<input id="c-books" inputmode="numeric"></label>
+    </fieldset>
+    <fieldset><legend>Tablero</legend>
+      <label><input type="checkbox" id="c-rotate"> Permitir girar el tablero 90°</label>
+    </fieldset>
+    <label class="f">Búsqueda
+      <select id="c-search">
+        <option value="fast">Rápida</option>
+        <option value="normal">Normal (recomendada)</option>
+        <option value="deep">Exhaustiva</option>
+      </select></label>
+    <label class="f">Tiempo máximo (s)<input id="c-time" inputmode="numeric"></label>
+    <label class="f">Semilla <small>misma semilla = mismo resultado</small><input id="c-seed" inputmode="numeric"></label>
+  </div>
+  <div class="row"><span class="warn" id="cfg-err"></span><button id="cfg-reset">Valores por defecto</button><button class="primary" id="cfg-ok">Aceptar</button></div>
+</dialog>
+
+<div id="empty" class="empty">
+  <div class="drop">
+    <p style="font-size:16px;color:var(--ink);margin-top:0"><b>Arrastra aquí un resultado JSON</b></p>
+    <p>Acepta la respuesta de <code>generate_cut_plans</code> (con o sin la envoltura <code>output.result</code>) y también planos del formato anterior (camelCase).</p>
+    <p>¿Tienes un pedido sin optimizar? Créalo en la pestaña <b>Proyecto</b>, o usa <b>Optimizar JSON…</b> con un JSON de entrada (por ejemplo <code>entrada.json</code>).</p>
+  </div>
+</div>
+
+<div id="app" class="app" hidden>
+  <aside class="side">
+    <section class="card pad">
+      <h2 class="section-title" id="rec-title">Resumen</h2>
+      <div class="kpis" id="kpis"></div>
+      <div id="rec-warn"></div>
+    </section>
+    <section class="card">
+      <div class="pad" style="padding-bottom:0"><h2 class="section-title">Tableros</h2></div>
+      <div class="boards" id="boards"></div>
+    </section>
+  </aside>
+
+  <main class="main">
+    <section class="card">
+      <div class="toolbar">
+        <span class="title" id="board-title"></span>
+        <button id="btn-prev" aria-label="Tablero anterior">◀</button>
+        <button id="btn-next" aria-label="Tablero siguiente">▶</button>
+      </div>
+      <div class="stage" id="stage"></div>
+      <div class="legend" id="legend"></div>
+    </section>
+    <section class="card pad">
+      <h2 class="section-title">Métricas del tablero</h2>
+      <div class="kpis" id="board-kpis" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))"></div>
+    </section>
+  </main>
+
+  <aside class="detail">
+    <section class="card pad info">
+      <h2 class="section-title" id="info-title">Detalle</h2>
+      <div id="info"><p style="color:var(--muted);margin:0">Pasa el cursor sobre una pieza, un retal o una fila de la secuencia para ver qué cortes la producen.</p></div>
+    </section>
+    <section class="card">
+      <div class="pad" style="padding-bottom:4px"><h2 class="section-title">Secuencia de cortes</h2></div>
+      <div class="tree" id="tree"></div>
+    </section>
+  </aside>
+</div>
+
+<div id="print-area"></div>
+
+<dialog id="dlg-paste">
+  <h2 class="section-title">Pegar JSON de resultado</h2>
+  <textarea id="txt-paste" spellcheck="false" placeholder='{"success": true, "records": [...]}'></textarea>
+  <div class="row"><span class="warn" id="paste-err"></span><button id="paste-cancel">Cancelar</button><button class="primary" id="paste-ok">Ver planos</button></div>
+</dialog>
+
+<dialog id="dlg-opt">
+  <h2 class="section-title">Optimizar pedido</h2>
+  <p id="opt-offline" class="warn" hidden>Este visor se abrió como archivo y no puede llamar al motor. Inicia el servidor
+    (<code>cargo run --release -p optimizer-api</code>) y abre <a href="http://127.0.0.1:8080/viewer">http://127.0.0.1:8080/viewer</a>.</p>
+  <p style="margin:0 0 8px;color:var(--muted);font-size:13px">Pega o carga el JSON de entrada: una solicitud <code>generate_cut_plans</code>
+    completa o solo el <code>model</code> (materials, parts, stocks, machine).</p>
+  <textarea id="txt-req" spellcheck="false" placeholder='{"schema_version":"1.0","job_id":"...","operation":{"type":"generate_cut_plans","model":{...}}}'></textarea>
+  <div class="row">
+    <span class="warn" id="opt-err"></span>
+    <button id="opt-file">Cargar archivo…</button>
+    <input type="password" id="opt-key" placeholder="API key (opcional)" autocomplete="off">
+    <button id="opt-cancel">Cancelar</button>
+    <button class="primary" id="opt-ok">Optimizar</button>
+  </div>
+  <input type="file" id="req-file" accept=".json,application/json" hidden>
+</dialog>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+const PALETTE = ["#93c5fd","#fca5a5","#86efac","#fcd34d","#c4b5fd","#67e8f9","#f9a8d4","#bef264","#fdba74","#a5b4fc","#5eead4","#d8b4fe","#fde68a","#99f6e4","#fecaca","#bbf7d0"];
+const state = { doc: null, rec: 0, board: 0, model: null };
+
+// ---------- number helpers ----------
+const num = (v) => (v === null || v === undefined || v === "") ? 0 : Number(v);
+// Millimetres are shown as the plant reads them: no thousands separator, "." decimals.
+const fmt = (v, d = 1) => Number(v).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: d, useGrouping: false });
+const m2 = (mm2) => mm2 / 1e6;
+const isRemnant = (p) => p.type === "retal";
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// ---------- loading ----------
+function unwrap(json) {
+  let doc;
+  if (json && json.output && json.output.result && json.output.result.records) doc = json.output.result;
+  else if (json && json.result && json.result.records) doc = json.result;
+  else if (json && Array.isArray(json.records)) doc = json;
+  else throw new Error("No se encontró «records»: el JSON no tiene formato de planos.");
+  return isLegacy(doc) ? fromLegacy(doc) : doc;
+}
+
+// ---------- legacy (camelCase) plans ----------
+// Older exporters write camelCase keys, numbers as strings, `length` for the
+// vertical size and remnants inside `parts`. Convert them to the current
+// snake_case shape so the rest of the viewer reads one format only.
+const LEGACY_KEYS = {
+  nIdPza: "id_piece", nItem: "n_item", iCut: "i_cut", aLevel: "a_level", stockNo: "stock_no",
+  rootStockNo: "root_stock_no", cutsTrims: "cuts_trims", wastePart: "waste_part", stockCuts: "stock_cuts",
+  stockCount: "stock_count", sawWidth: "saw_width", maxBooks: "max_books", elapsedTime: "elapsed_time",
+  unitMeasure: "unit_measure", typeMeasure: "type_measure", completeOrder: "complete_order",
+  remainingParts: "remaining_parts", sVeta: "veta", length: "height",
+};
+const snake = (k) => LEGACY_KEYS[k] || k.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+const NUMERIC = /^-?\d+(\.\d+)?$/;
+function isLegacy(doc) {
+  const b = doc.records[0] && doc.records[0].boards && doc.records[0].boards[0];
+  return !!b && ("cutsTrims" in b || "stockNo" in b || "wastePart" in b);
+}
+function convert(value, key) {
+  if (Array.isArray(value)) return value.map((v) => convert(v, key));
+  if (value && typeof value === "object") {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[snake(k)] = convert(v, k);
+    return out;
+  }
+  // Labels such as "1/30" or material names stay text; plain numbers become numbers.
+  if (typeof value === "string" && NUMERIC.test(value) && !["material", "version"].includes(key)) return Number(value);
+  return value;
+}
+function fromLegacy(doc) {
+  const out = convert(doc);
+  for (const rec of out.records) {
+    for (const b of rec.boards) {
+      const parts = b.parts || [];
+      b.waste_part = parts.filter(isRemnant).map((r) => ({ ...r, rotated: undefined }));
+      b.parts = parts.filter((p) => !isRemnant(p));
+    }
+  }
+  return out;
+}
+
+function parseText(text) {
+  // Accept files with explanatory text before the JSON (as in exported prompts).
+  const start = text.indexOf("{");
+  if (start < 0) throw new Error("El archivo no contiene JSON.");
+  let json;
+  try { json = JSON.parse(text.slice(start)); }
+  catch (e) {
+    const end = text.lastIndexOf("}");
+    json = JSON.parse(text.slice(start, end + 1));
+  }
+  return unwrap(json);
+}
+
+function load(doc) {
+  setView("plans");
+  state.doc = doc;
+  state.model = doc.records.map(buildRecord);
+  state.rec = 0; state.board = 0;
+  const sel = $("sel-record");
+  sel.innerHTML = state.model.map((r, i) => `<option value="${i}">${esc(r.title)}</option>`).join("");
+  sel.hidden = state.model.length < 2;
+  $("empty").hidden = true; $("app").hidden = false;
+  $("btn-print").disabled = false; $("btn-download").disabled = false;
+  state.jobId = null;
+  renderRecord();
+}
+
+// ---------- model ----------
+// Each cut entry takes out the region between the previous sibling line and
+// its own line, inside the parent region. Regions are kept in blade-centre
+// coordinates; the drawing uses the piece/remnant rectangles from `parts`.
+function buildRecord(rec, index) {
+  const boards = rec.boards.map((b, i) => buildBoard(b, i, rec));
+  const totals = boards.reduce((t, b) => {
+    t.area += b.area; t.pieces += b.pieces.length; t.pieceArea += b.pieceArea; t.remArea += b.remArea;
+    t.cuts += b.cutsCount; t.cutLen += b.cutLen; t.negatives += b.negatives; return t;
+  }, { area: 0, pieces: 0, pieceArea: 0, remArea: 0, cuts: 0, cutLen: 0, negatives: 0 });
+  // Boards sharing root_stock_no are one stack ("libro"): same pattern, cut together.
+  const groups = [];
+  const byKey = new Map();
+  boards.forEach((b, i) => {
+    const key = String(b.raw.root_stock_no ?? b.stockNo);
+    if (!byKey.has(key)) { byKey.set(key, { key, boards: [] }); groups.push(byKey.get(key)); }
+    byKey.get(key).boards.push(i);
+  });
+  for (const g of groups) g.boards.forEach((bi, k) => { boards[bi].book = { key: g.key, pos: k + 1, size: g.boards.length }; });
+  return { raw: rec, index, title: rec.material || `Registro ${index + 1}`, boards, totals, books: groups.length, groups };
+}
+
+function buildBoard(b, i, rec) {
+  const kerf = num(b.saw_width ?? rec.saw_width);
+  const W = num(b.width), H = num(b.height);
+  const frame = { x1: num(b.x1), y1: num(b.y1), x2: num(b.x2 || W), y2: num(b.y2 || H) };
+  const byId = new Map();
+  const pieces = [], remnants = [];
+  let negatives = 0;
+  // Pieces keep nominal width/height and swap them on the drawing when rotated.
+  const add = (p, rem) => {
+    const pw = num(p.width), ph = num(p.height);
+    const [w, h] = (!rem && p.rotated) ? [ph, pw] : [pw, ph];
+    const item = { raw: p, id: num(p.id_piece), x: num(p.x), y: num(p.y), w, h, rem };
+    if (w <= 0 || h <= 0) { negatives++; item.invalid = true; }
+    (rem ? remnants : pieces).push(item);
+    byId.set(item.id, item);
+  };
+  for (const p of b.parts || []) add(p, false);
+  for (const r of b.waste_part || []) add(r, true);
+  const cuts = []; // flat list in sequence order
+  let cutsCount = 0, cutLen = 0;
+  function walk(list, level, region, parent) {
+    if (!Array.isArray(list) || !list.length) return;
+    const first = list.find((c) => c.type !== "retal") || list[0];
+    const vertical = num(first.x1) === num(first.x2);
+    let prev = vertical ? region.x1 : region.y1;
+    for (const c of list) {
+      const at = vertical ? num(c.x1) : num(c.y1);
+      const r = vertical ? { x1: prev, y1: region.y1, x2: at, y2: region.y2 } : { x1: region.x1, y1: prev, x2: region.x2, y2: at };
+      const real = c.type !== "retal" && !c.edge;
+      const node = { raw: c, level, vertical, region: r, parent, real, seq: real ? ++cutsCount : null, id: num(c.id_piece), children: [] };
+      if (real) cutLen += vertical ? (region.y2 - region.y1 - kerf) : (region.x2 - region.x1 - kerf);
+      cuts.push(node);
+      if (parent) parent.children.push(node);
+      const target = byId.get(node.id);
+      if (target && node.id !== 0) target.cut = node;
+      walk(c[`level${level + 1}`], level + 1, r, node);
+      prev = at;
+    }
+  }
+  walk(b.cuts, 1, frame, null);
+  const area = W * H;
+  const pieceArea = pieces.reduce((s, p) => s + p.w * p.h, 0);
+  const remArea = remnants.filter((r) => !r.invalid).reduce((s, r) => s + r.w * r.h, 0);
+  const usable = Math.max(0, (frame.x2 - frame.x1 - kerf) * (frame.y2 - frame.y1 - kerf));
+  const metrics = b.metrics || {};
+  const levels = cuts.reduce((m, c) => Math.max(m, c.level), 0);
+  return {
+    raw: b, index: i, stockNo: b.stock_no ?? i + 1, W, H, kerf, frame, pieces, remnants, cuts, byId,
+    area, pieceArea, remArea, usable, negatives, levels,
+    cutsCount: b.stock_cuts !== undefined ? num(b.stock_cuts) : cutsCount,
+    cutLen: metrics.cut_length_m !== undefined ? metrics.cut_length_m * 1000 : cutLen,
+    util: area ? pieceArea / area : 0,
+  };
+}
+
+// ---------- rendering: record ----------
+function kpi(label, value, extra = "") { return `<div class="kpi"><span>${label}</span><b>${value}</b>${extra}</div>`; }
+function bar(frac) { return `<div class="bar"><i style="width:${Math.max(0, Math.min(100, frac * 100)).toFixed(1)}%"></i></div>`; }
+
+function renderRecord() {
+  const r = state.model[state.rec];
+  const t = r.totals;
+  $("rec-title").textContent = r.title;
+  const util = t.area ? t.pieceArea / t.area : 0;
+  $("kpis").innerHTML = [
+    kpi("Tableros", fmt(r.boards.length, 0), r.books !== r.boards.length ? `<span>${fmt(r.books, 0)} libros (apilados)</span>` : ""),
+    kpi("Piezas", fmt(t.pieces, 0)),
+    kpi("Aprovechamiento", `${fmt(util * 100, 2)} %`, bar(util)),
+    kpi("Retales", `${fmt(m2(t.remArea), 2)} m²`),
+    kpi("Cortes", fmt(t.cuts, 0)),
+    kpi("Longitud de corte", `${fmt(t.cutLen / 1000, 1)} m`),
+    kpi("Área tableros", `${fmt(m2(t.area), 2)} m²`),
+    kpi("Área piezas", `${fmt(m2(t.pieceArea), 2)} m²`),
+  ].join("");
+  const warn = [];
+  if (t.negatives) warn.push(`${t.negatives} retal(es) con medida cero o negativa en el archivo (se omiten del dibujo).`);
+  const doc = state.doc;
+  if (doc.complete_order === false) warn.push(`Pedido incompleto: ${esc(JSON.stringify(doc.remaining_parts || {}))}`);
+  $("rec-warn").innerHTML = warn.map((w) => `<p class="warn">${w}</p>`).join("");
+  $("boards").innerHTML = "";
+  const select = (i) => { state.board = i; renderBoard(); };
+  for (const g of r.groups) {
+    const first = r.boards[g.boards[0]];
+    if (g.boards.length === 1) {
+      const item = document.createElement("button");
+      item.className = "board-item"; item.type = "button"; item.dataset.board = g.boards[0];
+      item.innerHTML = `<div></div><div><div class="title">Tablero ${esc(first.stockNo)}</div><div class="meta">${fmt(first.W, 1)} × ${fmt(first.H, 1)} · ${first.pieces.length} pzas · ${fmt(first.util * 100, 1)} %</div>${bar(first.util)}</div>`;
+      item.firstChild.appendChild(drawBoard(first, { mini: true }));
+      item.onclick = () => select(g.boards[0]);
+      $("boards").appendChild(item);
+      continue;
+    }
+    // A stack: one pattern cut N times at once. Its members are nested.
+    const book = document.createElement("details");
+    book.className = "book"; book.dataset.book = g.key;
+    const pieces = g.boards.reduce((n, bi) => n + r.boards[bi].pieces.length, 0);
+    book.innerHTML = `<summary><div></div><div><div class="title">Libro ${esc(g.key)} <span class="badge">${g.boards.length} apilados</span></div>
+      <div class="meta">${fmt(first.W, 1)} × ${fmt(first.H, 1)} · ${first.pieces.length} pzas × ${g.boards.length} = ${pieces} · ${fmt(first.util * 100, 1)} %</div>${bar(first.util)}</div></summary>
+      <div class="book-kids"></div>`;
+    book.querySelector("summary > div").appendChild(drawBoard(first, { mini: true }));
+    const kids = book.querySelector(".book-kids");
+    g.boards.forEach((bi, k) => {
+      const b = r.boards[bi];
+      const item = document.createElement("button");
+      item.className = "board-item"; item.type = "button"; item.dataset.board = bi;
+      item.innerHTML = `<div class="title">Tablero ${esc(b.stockNo)}</div><span class="pos">${k + 1}/${g.boards.length}</span>`;
+      item.onclick = () => select(bi);
+      kids.appendChild(item);
+    });
+    $("boards").appendChild(book);
+  }
+  renderBoard();
+}
+
+// ---------- rendering: board ----------
+function el(tag, attrs = {}, parent) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+const levelColor = (l) => `var(--l${Math.min(6, Math.max(1, l))})`;
+const itemColor = (nItem) => PALETTE[(Math.abs(num(nItem)) - 1 + PALETTE.length * 8) % PALETTE.length];
+
+function drawBoard(b, opts = {}) {
+  const pad = Math.max(b.W, b.H) * 0.01;
+  const svg = el("svg", { viewBox: `${-pad} ${-pad} ${b.W + 2 * pad} ${b.H + 2 * pad}`, role: "img", "aria-label": `Tablero ${b.stockNo}` });
+  const defs = el("defs", {}, svg);
+  // Each drawing owns its pattern: a shared id would resolve to the first
+  // definition, which may sit in a hidden thumbnail.
+  const hatch = `hatch-${++drawBoard.seq}`;
+  const pat = el("pattern", { id: hatch, width: 24, height: 24, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
+  el("rect", { width: 24, height: 24, fill: "var(--remnant)" }, pat);
+  el("line", { x1: 0, y1: 0, x2: 0, y2: 24, stroke: "var(--remnant-ink)", "stroke-width": 3, "stroke-opacity": .35 }, pat);
+  el("rect", { x: 0, y: 0, width: b.W, height: b.H, fill: "var(--trim)", rx: 4 }, svg);
+  const f = b.frame;
+  el("rect", { x: f.x1, y: f.y1, width: f.x2 - f.x1, height: f.y2 - f.y1, fill: "var(--board)" }, svg);
+  const showLabels = opts.print || (!opts.mini && $("opt-labels").checked);
+  const showRem = opts.print || (!opts.mini && $("opt-remnants").checked);
+  const scale = Math.max(b.W, b.H);
+  for (const r of b.remnants) {
+    if (r.invalid) continue;
+    const n = el("rect", { x: r.x, y: r.y, width: r.w, height: r.h, class: "r-rect", fill: `url(#${hatch})`, "data-id": r.id }, svg);
+    if (!opts.mini) bindHover(n, b, r);
+    if (showRem) label(svg, r, [`${fmt(r.raw.width)} × ${fmt(r.raw.height)}`], "rlbl", scale);
+  }
+  for (const p of b.pieces) {
+    const n = el("rect", { x: p.x, y: p.y, width: p.w, height: p.h, class: "p-rect", fill: itemColor(p.raw.n_item), "data-id": p.id }, svg);
+    if (!opts.mini) bindHover(n, b, p);
+    if (showLabels) {
+      const rot = p.raw.rotated ? " ↻" : "";
+      label(svg, p, [`${p.raw.n_item}${rot}`, `${fmt(p.raw.width)} × ${fmt(p.raw.height)}`], "lbl", scale);
+    }
+  }
+  if (!opts.mini) {
+    for (const t of b.raw.cuts_trims || []) {
+      el("line", { x1: num(t.x1), y1: num(t.y1), x2: num(t.x2), y2: num(t.y2), class: "cut trim" }, svg);
+    }
+  }
+  const showNo = opts.print || (!opts.mini && $("opt-cutno").checked);
+  for (const c of b.cuts) {
+    if (c.raw.type === "retal") continue;
+    const line = el("line", { x1: num(c.raw.x1), y1: num(c.raw.y1), x2: num(c.raw.x2), y2: num(c.raw.y2),
+      class: "cut" + (c.raw.edge ? " edge" : ""), stroke: levelColor(c.level), "data-seq": c.seq ?? "" }, svg);
+    c.line = opts.mini ? c.line : line;
+    if (showNo && c.real) {
+      const fs = scale * 0.014;
+      const mx = (num(c.raw.x1) + num(c.raw.x2)) / 2, my = (num(c.raw.y1) + num(c.raw.y2)) / 2;
+      const t = el("text", { x: mx, y: my, "font-size": fs, "text-anchor": "middle", "dominant-baseline": "central", class: "cutno",
+        fill: levelColor(c.level), stroke: "var(--board)", "stroke-width": fs * 0.25, "paint-order": "stroke" }, svg);
+      t.textContent = c.seq;
+    }
+  }
+  if (!opts.mini) el("g", { id: "hl-layer" }, svg);
+  return svg;
+}
+
+drawBoard.seq = 0;
+
+function label(svg, r, lines, cls, scale) {
+  const big = Math.min(r.w, r.h);
+  let fs = Math.min(scale * 0.03, big * 0.32, r.w / (Math.max(...lines.map((l) => l.length)) * 0.6));
+  if (fs < scale * 0.006) return;
+  const t = el("text", { x: r.x + r.w / 2, y: r.y + r.h / 2, "text-anchor": "middle", class: cls, "font-size": fs }, svg);
+  lines.forEach((line, i) => {
+    const s = el("tspan", { x: r.x + r.w / 2, dy: i === 0 ? `${-(lines.length - 1) * 0.55 + 0.35}em` : "1.15em" }, t);
+    if (i === 0) s.setAttribute("font-weight", "700"); else s.setAttribute("font-size", fs * 0.7);
+    s.textContent = line;
+  });
+}
+
+function renderBoard() {
+  const r = state.model[state.rec];
+  const b = r.boards[state.board];
+  let activeItem = null;
+  document.querySelectorAll(".board-item").forEach((n) => {
+    const on = Number(n.dataset.board) === state.board;
+    n.classList.toggle("active", on);
+    if (on) activeItem = n;
+  });
+  document.querySelectorAll("details.book").forEach((d) => {
+    const has = !!activeItem && d.contains(activeItem);
+    d.classList.toggle("has-active", has);
+    if (has) d.open = true;
+  });
+  scrollWithin($("boards"), activeItem);
+  const orient = b.raw.orientation ? ` · primer corte ${b.raw.orientation === "h" ? "horizontal" : "vertical"}` : "";
+  const stacked = b.book && b.book.size > 1 ? ` · libro ${b.book.key} (${b.book.pos}/${b.book.size})` : "";
+  $("board-title").textContent = `Tablero ${b.stockNo} de ${r.boards.length}${stacked} — ${fmt(b.W)} × ${fmt(b.H)} mm${orient}`;
+  $("btn-prev").disabled = state.board === 0;
+  $("btn-next").disabled = state.board === r.boards.length - 1;
+  const stage = $("stage");
+  stage.innerHTML = "";
+  stage.appendChild(drawBoard(b));
+  if (b.book && b.book.size > 1) {
+    stage.insertAdjacentHTML("beforeend", `<div class="stack-badge" title="Tablero ${b.book.pos} de ${b.book.size} del libro ${esc(b.book.key)}: se cortan juntos">${b.book.pos}/${b.book.size}<small>libro ${esc(b.book.key)}</small></div>`);
+  }
+  const levels = [...new Set(b.cuts.filter((c) => c.real).map((c) => c.level))].sort();
+  $("legend").innerHTML = levels.map((l) => `<span><i style="background:${levelColor(l)}"></i>Nivel ${l}</span>`).join("") +
+    `<span><i style="background:var(--muted)"></i>Saneado</span><span><i style="background:var(--remnant)"></i>Retal</span>`;
+  const m = b.raw.metrics || {};
+  const kerfArea = m.kerf_area_m2 !== undefined ? m.kerf_area_m2 : Math.max(0, m2(b.area - b.pieceArea - b.remArea - (b.area - (b.frame.x2 - b.frame.x1 - b.kerf) * (b.frame.y2 - b.frame.y1 - b.kerf))));
+  const largest = b.remnants.filter((x) => !x.invalid).sort((a, c) => c.w * c.h - a.w * a.h)[0];
+  $("board-kpis").innerHTML = [
+    kpi("Aprovechamiento", `${fmt(b.util * 100, 2)} %`, bar(b.util)),
+    kpi("Piezas", fmt(b.pieces.length, 0)),
+    kpi("Cortes", fmt(b.cutsCount, 0)),
+    kpi("Niveles", fmt(b.levels, 0)),
+    kpi("Longitud de corte", `${fmt(b.cutLen / 1000, 2)} m`),
+    kpi("Área piezas", `${fmt(m2(b.pieceArea), 3)} m²`),
+    kpi("Retales", `${b.remnants.filter((x) => !x.invalid).length} · ${fmt(m2(b.remArea), 3)} m²`),
+    kpi("Pérdida sierra", `${fmt(kerfArea, 3)} m²`),
+    kpi("Mayor retal", largest ? `${fmt(largest.w)} × ${fmt(largest.h)}` : "—"),
+    kpi("Sierra / saneado", `${fmt(b.kerf)} / ${fmt(num(b.raw.trim))} mm`),
+  ].join("");
+  renderTree(b);
+}
+
+function renderTree(b) {
+  const rows = b.cuts.map((c, i) => {
+    const pad = (c.level - 1) * 14;
+    const target = b.byId.get(c.id);
+    let what;
+    if (c.raw.type === "retal") what = target && !target.invalid ? `Retal ${fmt(target.w)}×${fmt(target.h)}` : `<span class="warn">Retal sin medida</span>`;
+    else if (c.id && target) what = `#${c.id} · ít. ${esc(target.raw.n_item)} · ${fmt(target.raw.width)}×${fmt(target.raw.height)}${target.raw.rotated ? " ↻" : ""}`;
+    else what = `Franja (${c.children.filter((x) => x.real).length} cortes)`;
+    const pos = c.vertical ? `x ${fmt(num(c.raw.x1))}` : `y ${fmt(num(c.raw.y1))}`;
+    const dim = c.raw.dimension !== undefined ? fmt(num(c.raw.dimension)) : "";
+    const seq = c.real ? c.seq : (c.raw.edge ? "borde" : "");
+    return `<tr data-i="${i}"><td>${seq}</td><td><span style="padding-left:${pad}px"></span><span class="lvl" style="color:${levelColor(c.level)}">N${c.level}</span>${c.vertical ? "│" : "─"}</td><td>${pos}</td><td>${dim}</td><td>${what}</td></tr>`;
+  }).join("");
+  $("tree").innerHTML = `<table><thead><tr><th>#</th><th>Nivel</th><th>Posición</th><th>Medida</th><th>Saca</th></tr></thead><tbody>${rows}</tbody></table>`;
+  $("tree").querySelectorAll("tr[data-i]").forEach((tr) => {
+    const c = b.cuts[Number(tr.dataset.i)];
+    tr.onmouseenter = () => highlightCut(b, c, tr);
+    tr.onmouseleave = clearHighlight;
+    tr.onclick = () => highlightCut(b, c, tr, true);
+  });
+}
+
+// ---------- interaction ----------
+// Scroll a list so `item` is visible without moving the page itself.
+function scrollWithin(box, item) {
+  if (!box || !item) return;
+  const b = box.getBoundingClientRect(), r = item.getBoundingClientRect();
+  if (r.top < b.top) box.scrollTop -= b.top - r.top;
+  else if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom;
+}
+function chain(c) { const out = []; for (let n = c; n; n = n.parent) out.unshift(n); return out; }
+
+function clearHighlight() {
+  document.querySelectorAll("#stage .hl, #tree .hl").forEach((n) => n.classList.remove("hl"));
+  const layer = document.querySelector("#hl-layer");
+  if (layer) layer.innerHTML = "";
+}
+
+function showRegion(region) {
+  const layer = document.querySelector("#hl-layer");
+  if (!layer) return;
+  el("rect", { x: region.x1, y: region.y1, width: Math.max(0, region.x2 - region.x1), height: Math.max(0, region.y2 - region.y1), class: "region-hl" }, layer);
+}
+
+function highlightCut(b, c, row) {
+  clearHighlight();
+  if (row) row.classList.add("hl");
+  for (const n of chain(c)) if (n.line) n.line.classList.add("hl");
+  showRegion(c.region);
+  const target = b.byId.get(c.id);
+  if (target) {
+    const rect = document.querySelector(`#stage [data-id="${target.id}"]`);
+    if (rect) rect.classList.add("hl");
+  }
+  showInfo(b, target, c);
+}
+
+function bindHover(node, b, item) {
+  node.addEventListener("mouseenter", () => {
+    clearHighlight();
+    node.classList.add("hl");
+    if (item.cut) {
+      for (const n of chain(item.cut)) if (n.line) n.line.classList.add("hl");
+      const idx = b.cuts.indexOf(item.cut);
+      const row = document.querySelector(`#tree tr[data-i="${idx}"]`);
+      if (row) { row.classList.add("hl"); scrollWithin($("tree"), row); }
+    }
+    showInfo(b, item, item.cut);
+  });
+  node.addEventListener("mouseleave", clearHighlight);
+}
+
+const HIDDEN_KEYS = new Set(["x", "y", "width", "height", "rotated", "id_piece", "n_item", "type", "stock_no", "part", "datos", "veta", "reusable"]);
+function showInfo(b, item, cut) {
+  const rows = [];
+  if (item) {
+    const p = item.raw;
+    if (item.rem) {
+      $("info-title").textContent = `Retal ${item.id}`;
+      rows.push(["Medida", `${fmt(p.width)} × ${fmt(p.height)} mm`], ["Área", `${fmt(m2(item.w * item.h), 3)} m²`]);
+      if (p.reusable !== undefined) rows.push(["Reutilizable", p.reusable ? "Sí" : "No"]);
+    } else {
+      $("info-title").textContent = `Pieza #${item.id} · ítem ${p.n_item}`;
+      rows.push(["Medida", `${fmt(p.width)} × ${fmt(p.height)} mm`], ["Rotada", p.rotated ? "Sí ↻" : "No"]);
+      rows.push(["Veta", p.veta ? esc(p.veta) : "Sin veta"]);
+    }
+    rows.push(["Posición", `x ${fmt(item.x)} · y ${fmt(item.y)}`]);
+  } else if (cut) {
+    $("info-title").textContent = `Corte ${cut.seq ?? ""} · nivel ${cut.level}`;
+  }
+  if (cut) {
+    const path = chain(cut).map((n) => `<span style="color:${levelColor(n.level)};font-weight:600">N${n.level}</span> ${n.vertical ? "x" : "y"} ${fmt(n.vertical ? num(n.raw.x1) : num(n.raw.y1))}${n.real ? ` <span style="color:var(--muted)">(#${n.seq})</span>` : (n.raw.edge ? ' <span style="color:var(--muted)">(borde)</span>' : "")}`);
+    rows.push(["Cortes que la sacan", path.join("<br>")]);
+    if (cut.raw.dimension !== undefined) rows.push(["Medida del corte", `${fmt(num(cut.raw.dimension))} mm`]);
+  }
+  if (item && !item.rem) {
+    for (const [k, v] of Object.entries(item.raw)) {
+      if (HIDDEN_KEYS.has(k) || v === null || v === "" || v === false || typeof v === "object") continue;
+      rows.push([esc(k), esc(v)]);
+    }
+  }
+  $("info").innerHTML = `<dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+}
+
+// ---------- printing ----------
+function printPlans() {
+  const r = state.model[state.rec];
+  const area = $("print-area");
+  area.innerHTML = "";
+  r.boards.forEach((b) => {
+    const page = document.createElement("section");
+    page.className = "print-page";
+    const stack = b.book && b.book.size > 1 ? ` · libro ${esc(b.book.key)} (${b.book.pos}/${b.book.size})` : "";
+    page.innerHTML = `<h2>${esc(r.title)} — Tablero ${esc(b.stockNo)} / ${r.boards.length}${stack}</h2>
+      <div class="pmeta">${fmt(b.W)} × ${fmt(b.H)} mm · sierra ${fmt(b.kerf)} · saneado ${fmt(num(b.raw.trim))} · ${b.pieces.length} piezas · ${b.cutsCount} cortes · aprovechamiento ${fmt(b.util * 100, 2)} %</div>`;
+    page.appendChild(drawBoard(b, { print: true }));
+    const rows = b.cuts.filter((c) => c.raw.type !== "retal" || c.real).map((c) => {
+      const t = b.byId.get(c.id);
+      const what = c.raw.type === "retal" ? "Retal" : (t ? `#${c.id} ítem ${esc(t.raw.n_item)} (${fmt(t.raw.width)}×${fmt(t.raw.height)}${t.raw.rotated ? " ↻" : ""})` : "Franja");
+      return `<li><span>${c.real ? c.seq : "borde"}</span><span>${"·".repeat(c.level - 1)}N${c.level}</span><span>${c.vertical ? "x" : "y"} ${fmt(c.vertical ? num(c.raw.x1) : num(c.raw.y1))}</span><span>${c.raw.dimension !== undefined ? fmt(num(c.raw.dimension)) : ""}</span><span>${what}</span></li>`;
+    }).join("");
+    page.insertAdjacentHTML("beforeend", `<ol class="pcuts"><li class="h"><span>#</span><span>Nivel</span><span>Posición</span><span>Medida</span><span>Saca</span></li>${rows}</ol>`);
+    area.appendChild(page);
+  });
+  window.print();
+}
+
+// ---------- wiring ----------
+function readFile(file, done) {
+  const reader = new FileReader();
+  reader.onload = () => done(String(reader.result));
+  reader.readAsText(file);
+}
+function tryLoad(text, errNode) {
+  try { load(parseText(text)); return true; }
+  catch (e) { if (errNode) errNode.textContent = e.message; else alert(e.message); return false; }
+}
+
+$("btn-open").onclick = () => $("file").click();
+$("file").onchange = (e) => { const f = e.target.files[0]; if (f) readFile(f, (t) => tryLoad(t)); e.target.value = ""; };
+$("btn-paste").onclick = () => { $("paste-err").textContent = ""; $("dlg-paste").showModal(); };
+$("paste-cancel").onclick = () => $("dlg-paste").close();
+$("paste-ok").onclick = () => { if (tryLoad($("txt-paste").value, $("paste-err"))) $("dlg-paste").close(); };
+$("sel-record").onchange = (e) => { state.rec = Number(e.target.value); state.board = 0; renderRecord(); };
+$("btn-prev").onclick = () => { if (state.board > 0) { state.board--; renderBoard(); } };
+$("btn-next").onclick = () => { if (state.board < state.model[state.rec].boards.length - 1) { state.board++; renderBoard(); } };
+for (const id of ["opt-labels", "opt-cutno", "opt-remnants"]) $(id).onchange = () => state.model && renderBoard();
+$("btn-print").onclick = printPlans;
+$("btn-theme").onclick = () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+};
+document.addEventListener("keydown", (e) => {
+  if (!state.model || e.target.closest("textarea, input, dialog")) return;
+  if (e.key === "ArrowRight") $("btn-next").click();
+  if (e.key === "ArrowLeft") $("btn-prev").click();
+});
+const empty = $("empty");
+["dragenter", "dragover"].forEach((t) => document.addEventListener(t, (e) => { e.preventDefault(); empty.classList.add("dragging"); }));
+["dragleave", "drop"].forEach((t) => document.addEventListener(t, (e) => { e.preventDefault(); empty.classList.remove("dragging"); }));
+document.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) readFile(f, (t) => tryLoad(t)); });
+
+// Jobs go to the engine that served this page; a page opened from disk has
+// no engine to call (the API deliberately sends no CORS headers).
+let engineOnline = false;
+function setEngine(online) {
+  engineOnline = online;
+  $("opt-offline").hidden = online;
+  $("opt-ok").disabled = !online;
+}
+setEngine(false);
+if (location.protocol.startsWith("http")) {
+  fetch("/healthz").then((r) => r.ok ? r.json() : null)
+    .then((h) => setEngine(!!h && h.service === "industrial-cut-optimizer"))
+    .catch(() => setEngine(false));
+}
+$("btn-optimize").onclick = () => { $("opt-err").textContent = ""; $("dlg-opt").showModal(); };
+
+// Accept a full request, a request without job metadata, or a bare model.
+function toRequest(input) {
+  if (input && input.operation) {
+    return { schema_version: "1.0", job_id: `ui-${Date.now()}`, ...input };
+  }
+  if (input && input.materials && input.parts && input.stocks) {
+    return { schema_version: "1.0", job_id: `ui-${Date.now()}`, options: { seed: 42, max_runtime_ms: 30000 },
+             operation: { type: "generate_cut_plans", model: input } };
+  }
+  throw new Error("No es una entrada válida: falta «operation» o el modelo (materials, parts, stocks, machine).");
+}
+
+function download(name, text) {
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+$("btn-download").onclick = () => {
+  if (!state.doc) return;
+  download(`planos-${state.jobId || "resultado"}.json`, JSON.stringify(state.doc, null, 2));
+};
+$("opt-cancel").onclick = () => $("dlg-opt").close();
+$("opt-file").onclick = () => $("req-file").click();
+$("req-file").onchange = (e) => { const f = e.target.files[0]; if (f) readFile(f, (t) => { $("txt-req").value = t; }); e.target.value = ""; };
+$("opt-ok").onclick = async () => {
+  const btn = $("opt-ok");
+  $("opt-err").textContent = "";
+  let body;
+  try { body = toRequest(JSON.parse($("txt-req").value)); }
+  catch (e) { $("opt-err").textContent = e instanceof SyntaxError ? "JSON inválido: " + e.message : e.message; return; }
+  btn.disabled = true; btn.textContent = "Optimizando…";
+  const started = performance.now();
+  try {
+    const headers = { "content-type": "application/json" };
+    const key = $("opt-key").value.trim();
+    if (key) headers.authorization = `Bearer ${key}`;
+    const res = await fetch("/api/v1/cut-plans", { method: "POST", headers, body: JSON.stringify(body) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ? `${json.error.code}: ${json.error.message}` : `HTTP ${res.status}`);
+    load(unwrap(json));
+    state.jobId = body.job_id;
+    $("dlg-opt").close();
+    $("board-title").title = `Optimizado en ${((performance.now() - started) / 1000).toFixed(1)} s`;
+  } catch (e) { $("opt-err").textContent = e.message; }
+  finally { btn.disabled = !engineOnline; btn.textContent = "Optimizar"; }
+};
+
+// =====================================================================
+// Project editor: materials + pieces + settings → generate_cut_plans
+// =====================================================================
+const DEFAULT_CONFIG = { kerf: 4.4, trim: 5, min: 50, maxcut: "", two: true, three: true, stack: true, books: 3, rotate: false, search: "normal", time: 30, seed: 42 };
+const SEARCH = {
+  fast:   { restarts: 2, beam_width: 8,  max_expansions: 1500,  max_iterations: 8,  neighborhood_boards: 2 },
+  normal: { restarts: 8, beam_width: 16, max_expansions: 4000,  max_iterations: 64, neighborhood_boards: 8 },
+  deep:   { restarts: 8, beam_width: 32, max_expansions: 10000, max_iterations: 64, neighborhood_boards: 8 },
+};
+const STORE_KEY = "planos.project.v1";
+const blankMaterial = () => ({ name: "", length: 2440, width: 2140, thickness: 18, qty: 100, price: 250, grain: false });
+const blankPart = () => ({ mat: 0, qty: "", w: "", h: "", veta: "" });
+const project = { name: "", materials: [blankMaterial()], parts: [blankPart(), blankPart(), blankPart()], config: { ...DEFAULT_CONFIG } };
+
+// Numbers typed by hand: accept "4,4" and blanks.
+const parseNum = (v) => { const t = String(v ?? "").trim().replace(",", "."); return t === "" ? NaN : Number(t); };
+const tenths = (mm) => Math.round(mm * 10);
+
+function saveDraft() { try { localStorage.setItem(STORE_KEY, JSON.stringify(project)); } catch (e) { /* storage unavailable */ } }
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (Array.isArray(saved.materials) && Array.isArray(saved.parts)) {
+      Object.assign(project, saved, { config: { ...DEFAULT_CONFIG, ...(saved.config || {}) } });
+      project.materials.forEach((m) => { if (m.price === undefined) m.price = 250; });
+    }
+  } catch (e) { /* ignore a broken draft */ }
+}
+
+function setView(view) {
+  document.body.dataset.view = view;
+  $("tab-project").setAttribute("aria-selected", String(view === "project"));
+  $("tab-plans").setAttribute("aria-selected", String(view === "plans"));
+}
+$("tab-project").onclick = () => setView("project");
+$("tab-plans").onclick = () => setView("plans");
+
+// ---------- tables ----------
+const MAT_FIELDS = [["name", "text"], ["length", "num"], ["width", "num"], ["thickness", "num"], ["qty", "num"], ["price", "num"]];
+const PART_FIELDS = [["qty", "num"], ["w", "num"], ["h", "num"]];
+
+function cellInput(value, kind, onInput, extra = {}) {
+  const input = document.createElement("input");
+  input.value = value ?? "";
+  if (kind === "num") { input.className = "num"; input.inputMode = "decimal"; }
+  Object.assign(input, extra);
+  input.oninput = () => { onInput(input.value); saveDraft(); validateProject(); };
+  return input;
+}
+
+function renderMaterials() {
+  const body = $("mat-table").tBodies[0];
+  body.innerHTML = "";
+  project.materials.forEach((m, i) => {
+    const tr = body.insertRow();
+    tr.insertCell().outerHTML = `<td class="idx">${i + 1}</td>`;
+    for (const [key, kind] of MAT_FIELDS) {
+      const td = tr.insertCell();
+      const extra = key === "name" ? { placeholder: "Melamina blanca 18 mm" } : {};
+      td.appendChild(cellInput(m[key], kind, (v) => { m[key] = v; if (key === "name") renderPartMaterialOptions(); }, extra));
+      td.firstChild.dataset.key = key;
+    }
+    const g = tr.insertCell();
+    g.innerHTML = `<label class="chk"><input type="checkbox" ${m.grain ? "checked" : ""}> Con veta</label>`;
+    g.querySelector("input").onchange = (e) => { m.grain = e.target.checked; saveDraft(); renderParts(); };
+    const d = tr.insertCell(); d.className = "del";
+    d.innerHTML = `<button title="Quitar material" aria-label="Quitar material">×</button>`;
+    d.firstChild.onclick = () => {
+      if (project.materials.length === 1) { project.materials[0] = blankMaterial(); }
+      else {
+        project.materials.splice(i, 1);
+        project.parts.forEach((p) => { if (p.mat === i) p.mat = 0; else if (p.mat > i) p.mat--; });
+      }
+      saveDraft(); renderAll();
+    };
+  });
+}
+
+function materialLabel(m, i) { return m.name && m.name.trim() ? m.name.trim() : `Material ${i + 1}`; }
+function renderPartMaterialOptions() {
+  document.querySelectorAll("#part-table select.mat").forEach((sel) => {
+    const v = sel.value;
+    sel.innerHTML = project.materials.map((m, i) => `<option value="${i}">${esc(materialLabel(m, i))}</option>`).join("");
+    sel.value = v;
+  });
+}
+
+function renderParts() {
+  const multi = project.materials.length > 1;
+  document.querySelectorAll("#part-table .mat-col").forEach((th) => { th.hidden = !multi; });
+  const body = $("part-table").tBodies[0];
+  body.innerHTML = "";
+  project.parts.forEach((p, i) => {
+    const tr = body.insertRow();
+    tr.dataset.row = i;
+    tr.insertCell().outerHTML = `<td class="idx">${i + 1}</td>`;
+    const mc = tr.insertCell(); mc.hidden = !multi;
+    const sel = document.createElement("select"); sel.className = "mat";
+    sel.innerHTML = project.materials.map((m, j) => `<option value="${j}">${esc(materialLabel(m, j))}</option>`).join("");
+    sel.value = String(p.mat ?? 0);
+    sel.onchange = () => { p.mat = Number(sel.value); saveDraft(); renderParts(); };
+    mc.appendChild(sel);
+    PART_FIELDS.forEach(([key, kind], col) => {
+      const td = tr.insertCell();
+      const input = cellInput(p[key], kind, (v) => { p[key] = v; updateSummary(); });
+      input.dataset.key = key; input.dataset.col = col;
+      td.appendChild(input);
+    });
+    const vc = tr.insertCell();
+    const grainful = !!(project.materials[p.mat] || project.materials[0]).grain;
+    const vs = document.createElement("select"); vs.className = "veta"; vs.dataset.col = 3;
+    vs.innerHTML = `<option value="">—</option><option value="L">L</option><option value="A">A</option>`;
+    vs.value = grainful ? (p.veta || "") : "";
+    vs.disabled = !grainful;
+    vs.title = grainful ? "L: a lo largo del ancho · A: a lo largo del alto · —: sin veta" : "El material no tiene veta";
+    vs.onchange = () => { p.veta = vs.value; saveDraft(); validateProject(); };
+    vc.appendChild(vs);
+    const d = tr.insertCell(); d.className = "del";
+    d.innerHTML = `<button title="Quitar pieza" aria-label="Quitar pieza">×</button>`;
+    d.firstChild.onclick = () => {
+      project.parts.splice(i, 1);
+      if (!project.parts.length) project.parts.push(blankPart());
+      saveDraft(); renderParts();
+    };
+  });
+  validateProject();
+}
+
+function addPart(focusCol = 0) {
+  const last = project.parts[project.parts.length - 1];
+  project.parts.push({ ...blankPart(), mat: last ? last.mat : 0 });
+  saveDraft(); renderParts();
+  focusCell(project.parts.length - 1, focusCol);
+}
+function focusCell(row, col) {
+  const el = document.querySelector(`#part-table tr[data-row="${row}"] [data-col="${col}"]`);
+  if (el) { el.focus(); if (el.select) el.select(); }
+}
+
+// Enter moves down (adding a row at the end); paste spreads Excel rows.
+$("part-table").addEventListener("keydown", (e) => {
+  const cell = e.target.closest("[data-col]");
+  if (!cell || e.key !== "Enter") return;
+  e.preventDefault();
+  const row = Number(cell.closest("tr").dataset.row), col = Number(cell.dataset.col);
+  if (row === project.parts.length - 1) addPart(col); else focusCell(row + 1, col);
+});
+$("part-table").addEventListener("paste", (e) => {
+  const cell = e.target.closest("[data-col]");
+  const text = (e.clipboardData || window.clipboardData).getData("text");
+  if (!cell || !/[\t\n]/.test(text.trim())) return;   // plain single value: default paste
+  e.preventDefault();
+  const startRow = Number(cell.closest("tr").dataset.row), startCol = Number(cell.dataset.col);
+  const keys = ["qty", "w", "h", "veta"];
+  const lines = text.replace(/\r/g, "").split("\n").filter((l) => l.trim() !== "");
+  lines.forEach((line, k) => {
+    const r = startRow + k;
+    while (project.parts.length <= r) project.parts.push({ ...blankPart(), mat: project.parts[project.parts.length - 1]?.mat ?? 0 });
+    line.split("\t").forEach((value, j) => {
+      const key = keys[startCol + j];
+      if (!key) return;
+      let v = value.trim();
+      if (key === "veta") v = /^l/i.test(v) ? "L" : /^a/i.test(v) ? "A" : "";
+      project.parts[r][key] = v;
+    });
+  });
+  saveDraft(); renderParts();
+});
+
+$("add-mat").onclick = () => { project.materials.push(blankMaterial()); saveDraft(); renderAll(); };
+$("add-part").onclick = () => addPart(0);
+$("p-name").oninput = (e) => { project.name = e.target.value; saveDraft(); };
+
+// ---------- validation ----------
+function filledParts() {
+  return project.parts.map((p, i) => ({ p, i })).filter(({ p }) => [p.qty, p.w, p.h].some((v) => String(v ?? "").trim() !== ""));
+}
+
+function validateProject() {
+  const errors = [], warns = [];
+  const c = project.config;
+  const trim = parseNum(c.trim), kerf = parseNum(c.kerf);
+  document.querySelectorAll("#mat-table input[data-key], #part-table input[data-key]").forEach((el) => el.classList.remove("bad"));
+  const markMat = (i, key) => { const el = document.querySelector(`#mat-table tbody tr:nth-child(${i + 1}) input[data-key="${key}"]`); if (el) el.classList.add("bad"); };
+  const markPart = (i, key) => { const el = document.querySelector(`#part-table tr[data-row="${i}"] input[data-key="${key}"]`); if (el) el.classList.add("bad"); };
+  project.materials.forEach((m, i) => {
+    const label = materialLabel(m, i);
+    if (!String(m.name || "").trim()) { errors.push(`Material ${i + 1}: falta el nombre.`); markMat(i, "name"); }
+    for (const key of ["length", "width", "thickness"]) {
+      const v = parseNum(m[key]);
+      if (!(v > 0) || v > 100000) { errors.push(`${label}: ${({ length: "largo", width: "ancho", thickness: "espesor" })[key]} inválido.`); markMat(i, key); }
+    }
+    const q = parseNum(m.qty);
+    if (!(q >= 1) || !Number.isInteger(q)) { errors.push(`${label}: «Disponibles» debe ser un entero ≥ 1.`); markMat(i, "qty"); }
+    if (parseNum(m.length) <= 2 * trim || parseNum(m.width) <= 2 * trim) { errors.push(`${label}: el saneado no deja área útil.`); }
+    if (!(parseNum(m.price) > 0)) { errors.push(`${label}: indica el precio del tablero (lo usa el optimizador para minimizar tableros).`); markMat(i, "price"); }
+  });
+  const rows = filledParts();
+  if (!rows.length) errors.push("Agrega al menos una pieza.");
+  for (const { p, i } of rows) {
+    const q = parseNum(p.qty), w = parseNum(p.w), h = parseNum(p.h);
+    if (!(q >= 1) || !Number.isInteger(q)) { errors.push(`Pieza ${i + 1}: cantidad inválida.`); markPart(i, "qty"); }
+    if (!(w > 0)) { errors.push(`Pieza ${i + 1}: ancho inválido.`); markPart(i, "w"); }
+    if (!(h > 0)) { errors.push(`Pieza ${i + 1}: alto inválido.`); markPart(i, "h"); }
+    const m = project.materials[p.mat] || project.materials[0];
+    if (m && w > 0 && h > 0) {
+      const uw = parseNum(m.length) - 2 * trim, uh = parseNum(m.width) - 2 * trim;
+      const veta = m.grain ? p.veta : "";
+      const straight = w <= uw && h <= uh, turned = h <= uw && w <= uh;
+      const fits = veta === "L" ? straight : veta === "A" ? turned : straight || turned;
+      if (!fits) { warns.push(`Pieza ${i + 1} (${fmt(w)} × ${fmt(h)}${veta ? ", veta " + veta : ""}) no entra en «${materialLabel(m, p.mat)}» (útil ${fmt(uw)} × ${fmt(uh)}).`); markPart(i, "w"); markPart(i, "h"); }
+    }
+  }
+  if (!(kerf > 0)) errors.push("Configuración: ancho de sierra inválido.");
+  if (!c.two && !c.three) errors.push("Configuración: elige al menos un patrón de corte.");
+  $("part-msgs").innerHTML = warns.map((w) => `<p class="warn" style="margin:0">${esc(w)}</p>`).join("");
+  updateSummary();
+  return { errors, warns };
+}
+
+function updateSummary() {
+  const rows = filledParts();
+  let pieces = 0, area = 0;
+  for (const { p } of rows) {
+    const q = parseNum(p.qty), w = parseNum(p.w), h = parseNum(p.h);
+    if (q > 0 && w > 0 && h > 0) { pieces += q; area += q * w * h; }
+  }
+  const m = project.materials[0];
+  const trim = parseNum(project.config.trim) || 0;
+  const usable = m ? (parseNum(m.length) - 2 * trim) * (parseNum(m.width) - 2 * trim) : 0;
+  const estimate = usable > 0 ? Math.ceil(area / usable) : 0;
+  $("part-summary").innerHTML = `<b>${rows.length}</b> ítems · <b>${fmt(pieces, 0)}</b> piezas · <b>${fmt(area / 1e6, 2)}</b> m²` +
+    (project.materials.length === 1 && estimate ? ` · mínimo teórico <b>${estimate}</b> tableros` : "");
+}
+
+// ---------- model ⇄ form ----------
+function slug(text) {
+  const base = String(text || "proyecto").normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
+  return base || "proyecto";
+}
+
+function buildRequest() {
+  const c = project.config;
+  const trim = tenths(parseNum(c.trim) || 0), kerf = tenths(parseNum(c.kerf));
+  const min = Math.max(1, tenths(parseNum(c.min) || 1));
+  const books = Math.max(1, Math.round(parseNum(c.books) || 1));
+  const stacking = !!c.stack && books >= 2;
+  const materials = [], stocks = [];
+  project.materials.forEach((m, i) => {
+    const id = `mat-${i + 1}`;
+    const thickness = tenths(parseNum(m.thickness));
+    materials.push({ id, name: String(m.name).trim(), thickness, directional_grain: !!m.grain });
+    stocks.push({ id: `tablero-${i + 1}`, material_id: id, kind: "full_board", width: tenths(parseNum(m.length)), height: tenths(parseNum(m.width)),
+      thickness, quantity: Math.round(parseNum(m.qty)), grain_axis: m.grain ? "x" : null,
+      trim: { top: trim, right: trim, bottom: trim, left: trim }, unit_cost_minor: Math.round(parseNum(m.price) * 100) });
+  });
+  const parts = filledParts().map(({ p }, k) => {
+    const m = project.materials[p.mat] || project.materials[0];
+    const veta = m.grain ? p.veta : "";
+    // Rotation is always allowed: grain (if any) already fixes the orientation.
+    return { id: `item-${k + 1}`, material_id: `mat-${(project.materials.indexOf(m)) + 1}`, width: tenths(parseNum(p.w)), height: tenths(parseNum(p.h)),
+      quantity: Math.round(parseNum(p.qty)), allow_rotate_90: true, grain_axis: veta === "L" ? "x" : veta === "A" ? "y" : null, priority: 0 };
+  });
+  const longest = Math.max(...stocks.map((s) => Math.max(s.width, s.height)));
+  const maxcut = parseNum(c.maxcut) > 0 ? tenths(parseNum(c.maxcut)) : longest;
+  const thickest = Math.max(...materials.map((m) => m.thickness));
+  const patterns = [...(c.two ? ["V-H", "H-V"] : []), ...(c.three ? ["V-H-V", "H-V-H"] : [])];
+  const totalBoards = stocks.reduce((s, x) => s + x.quantity, 0);
+  return {
+    schema_version: "1.0",
+    job_id: slug(project.name),
+    options: { seed: Math.max(0, Math.round(parseNum(c.seed) || 0)), max_runtime_ms: Math.min(120, Math.max(1, Math.round(parseNum(c.time) || 30))) * 1000 },
+    operation: {
+      type: "generate_cut_plans",
+      model: {
+        materials, parts, stocks,
+        machine: { id: "seccionadora", kerf, max_cut_length: maxcut, min_piece_width: min, min_piece_height: min, min_strip_width: min, min_clamp_width: min,
+          max_stack_height: thickest * books, max_stack_members: books, allow_board_rotation: !!c.rotate, allow_recuts: true,
+          allowed_patterns: patterns, stacking: { full_boards: stacking, strips: stacking, restacking: false } },
+      },
+      global_options: { max_boards: Math.min(512, Math.max(1, totalBoards)), ...SEARCH[c.search] || SEARCH.normal },
+    },
+  };
+}
+
+// Fill the form from an input request (or a bare model), e.g. entrada.json.
+function importRequest(json) {
+  const req = json.operation ? json : { operation: { model: json } };
+  const model = req.operation.model;
+  if (!model || !Array.isArray(model.materials) || !Array.isArray(model.parts)) throw new Error("El archivo no contiene un modelo (materials, parts, stocks).");
+  const mm = (u) => u / 10;
+  const matIndex = new Map();
+  project.materials = model.materials.map((m, i) => {
+    matIndex.set(m.id, i);
+    const st = (model.stocks || []).find((s) => s.material_id === m.id) || {};
+    return { name: m.name, length: mm(st.width ?? 24400), width: mm(st.height ?? 21400), thickness: mm(m.thickness), qty: st.quantity ?? 100,
+             price: st.unit_cost_minor ? st.unit_cost_minor / 100 : 250, grain: !!m.directional_grain };
+  });
+  project.parts = model.parts.map((p) => ({ mat: matIndex.get(p.material_id) ?? 0, qty: p.quantity, w: mm(p.width), h: mm(p.height),
+    veta: p.grain_axis === "x" ? "L" : p.grain_axis === "y" ? "A" : "" }));
+  const mc = model.machine || {}, st0 = (model.stocks || [])[0] || {}, pats = mc.allowed_patterns || [];
+  const g = req.operation.global_options || {};
+  const search = Object.entries(SEARCH).find(([, v]) => v.beam_width === g.beam_width && v.restarts === g.restarts)?.[0] || "normal";
+  project.config = { ...DEFAULT_CONFIG,
+    kerf: mc.kerf !== undefined ? mm(mc.kerf) : DEFAULT_CONFIG.kerf,
+    trim: st0.trim ? mm(st0.trim.left) : DEFAULT_CONFIG.trim,
+    min: mc.min_piece_width !== undefined ? mm(mc.min_piece_width) : DEFAULT_CONFIG.min,
+    maxcut: "", two: pats.length ? pats.some((x) => x.length === 3) : true, three: pats.length ? pats.some((x) => x.length === 5) : true,
+    stack: mc.stacking ? !!mc.stacking.full_boards : true, books: mc.max_stack_members ?? 3, rotate: !!mc.allow_board_rotation, search,
+    time: req.options && req.options.max_runtime_ms ? Math.round(req.options.max_runtime_ms / 1000) : 30,
+    seed: req.options && req.options.seed !== undefined ? req.options.seed : 42 };
+  project.name = req.job_id && !String(req.job_id).startsWith("ui-") ? req.job_id : (project.name || "");
+  saveDraft(); renderAll();
+}
+
+$("btn-import").onclick = () => $("import-file").click();
+$("import-file").onchange = (e) => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  readFile(f, (t) => { try { importRequest(JSON.parse(t.slice(t.indexOf("{")))); showRunMsgs([], []); } catch (err) { showRunMsgs([err.message], []); } });
+};
+$("btn-export").onclick = () => {
+  const { errors } = validateProject();
+  if (errors.length) { showRunMsgs(errors, []); return; }
+  download(`entrada-${slug(project.name)}.json`, JSON.stringify(buildRequest(), null, 2));
+};
+$("btn-new").onclick = () => {
+  if (!confirm("¿Empezar un proyecto nuevo? Se borrarán los datos del formulario.")) return;
+  project.name = ""; project.materials = [blankMaterial()]; project.parts = [blankPart(), blankPart(), blankPart()]; project.config = { ...DEFAULT_CONFIG };
+  saveDraft(); renderAll(); showRunMsgs([], []);
+};
+
+function showRunMsgs(errors, info) {
+  const box = $("run-msgs");
+  box.innerHTML = errors.map((e) => `<p class="warn" style="margin:0">${esc(e)}</p>`).join("") + info.map((m) => `<p style="margin:0;color:var(--muted)">${esc(m)}</p>`).join("");
+  box.hidden = !errors.length && !info.length;
+}
+
+// ---------- settings dialog ----------
+const CFG_INPUTS = { kerf: "c-kerf", trim: "c-trim", min: "c-min", maxcut: "c-maxcut", books: "c-books", time: "c-time", seed: "c-seed", search: "c-search" };
+const CFG_CHECKS = { two: "c-two", three: "c-three", stack: "c-stack", rotate: "c-rotate" };
+function fillConfig(c) {
+  for (const [k, id] of Object.entries(CFG_INPUTS)) $(id).value = c[k] ?? "";
+  for (const [k, id] of Object.entries(CFG_CHECKS)) $(id).checked = !!c[k];
+  $("cfg-err").textContent = "";
+}
+$("btn-config").onclick = () => { fillConfig(project.config); $("dlg-config").showModal(); };
+$("cfg-reset").onclick = () => fillConfig(DEFAULT_CONFIG);
+$("cfg-ok").onclick = () => {
+  const c = {};
+  for (const [k, id] of Object.entries(CFG_INPUTS)) c[k] = $(id).value;
+  for (const [k, id] of Object.entries(CFG_CHECKS)) c[k] = $(id).checked;
+  const bad = [];
+  if (!(parseNum(c.kerf) > 0)) bad.push("sierra");
+  if (!(parseNum(c.trim) >= 0)) bad.push("saneado");
+  if (!(parseNum(c.min) > 0)) bad.push("pieza mínima");
+  if (c.maxcut !== "" && !(parseNum(c.maxcut) > 0)) bad.push("largo máximo");
+  if (!(parseNum(c.books) >= 1)) bad.push("tableros por libro");
+  if (!(parseNum(c.time) >= 1 && parseNum(c.time) <= 120)) bad.push("tiempo (1–120 s)");
+  if (!(parseNum(c.seed) >= 0)) bad.push("semilla");
+  if (!c.two && !c.three) bad.push("al menos un patrón");
+  if (bad.length) { $("cfg-err").textContent = "Revisa: " + bad.join(", "); return; }
+  project.config = c; saveDraft(); validateProject(); $("dlg-config").close();
+};
+
+// ---------- optimise ----------
+$("btn-run").onclick = async () => {
+  const { errors } = validateProject();
+  if (errors.length) { showRunMsgs(errors, []); return; }
+  if (!engineOnline) { showRunMsgs(["El visor no está conectado al motor. Inicia el servidor (cargo run --release -p optimizer-api) y abre http://127.0.0.1:8080/viewer."], []); return; }
+  const btn = $("btn-run");
+  const request = buildRequest();
+  btn.disabled = true; btn.textContent = "Optimizando…";
+  showRunMsgs([], [`Optimizando ${fmt(request.operation.model.parts.reduce((s, p) => s + p.quantity, 0), 0)} piezas…`]);
+  const started = performance.now();
+  try {
+    const res = await fetch("/api/v1/cut-plans", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ? `${json.error.message}` : `HTTP ${res.status}`);
+    load(unwrap(json));
+    state.jobId = request.job_id;
+    $("board-title").title = `Optimizado en ${((performance.now() - started) / 1000).toFixed(1)} s`;
+    showRunMsgs([], []);
+    setView("plans");
+  } catch (e) {
+    showRunMsgs([`El motor rechazó la solicitud: ${e.message}`], []);
+  } finally {
+    btn.disabled = false; btn.textContent = "Optimizar";
+  }
+};
+
+function renderAll() {
+  $("p-name").value = project.name || "";
+  renderMaterials();
+  renderParts();
+}
+
+loadDraft();
+renderAll();
+setView("project");
+</script>
+</body>
+</html>

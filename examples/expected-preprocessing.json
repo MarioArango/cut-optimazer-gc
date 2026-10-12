@@ -1,0 +1,240 @@
+{
+  "schema_version": "1.0",
+  "job_id": "preprocess-melamina-001",
+  "engine_version": "0.18.0",
+  "status": "completed",
+  "seed": 2026,
+  "output": {
+    "type": "model_preprocessing",
+    "prepared": {
+      "summary": {
+        "material_groups": 1,
+        "part_types": 2,
+        "expanded_pieces": 12,
+        "eligible_part_types": 2,
+        "ineligible_part_types": 0,
+        "eligible_instances": 12,
+        "stock_types": 1,
+        "available_stock_units": 10,
+        "stock_orientations": 2,
+        "fit_options": 3,
+        "all_parts_individually_fit": true,
+        "aggregate_area_sufficient": true,
+        "geometry_validated": false,
+        "production_validated": false
+      },
+      "groups": [
+        {
+          "material_id": "mel-blanca-18",
+          "part_ids": [
+            "p-puerta",
+            "p-estante"
+          ],
+          "stock_ids": [
+            "stock-2440-1830"
+          ],
+          "requested_pieces": 12,
+          "available_stock_units": 10,
+          "requested_area_sq_units": "288000000",
+          "available_usable_area_sq_units": "4380200000",
+          "aggregate_area_sufficient": true
+        }
+      ],
+      "stocks": [
+        {
+          "stock_id": "stock-2440-1830",
+          "material_id": "mel-blanca-18",
+          "kind": "full_board",
+          "quantity": 10,
+          "unit_cost_minor": 18000,
+          "orientations": [
+            {
+              "rotated_90": false,
+              "width": 24400,
+              "height": 18300,
+              "usable_x": 100,
+              "usable_y": 100,
+              "usable_width": 24200,
+              "usable_height": 18100,
+              "grain_axis": "x"
+            },
+            {
+              "rotated_90": true,
+              "width": 18300,
+              "height": 24400,
+              "usable_x": 100,
+              "usable_y": 100,
+              "usable_width": 18100,
+              "usable_height": 24200,
+              "grain_axis": "y"
+            }
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "part_id": "p-puerta",
+          "material_id": "mel-blanca-18",
+          "requested_quantity": 4,
+          "eligibility": "eligible",
+          "issue": null,
+          "fit_options": [
+            {
+              "stock_id": "stock-2440-1830",
+              "stock_rotated_90": false,
+              "part_rotated_90": false,
+              "width": 6000,
+              "height": 4000
+            }
+          ]
+        },
+        {
+          "part_id": "p-estante",
+          "material_id": "mel-blanca-18",
+          "requested_quantity": 8,
+          "eligibility": "eligible",
+          "issue": null,
+          "fit_options": [
+            {
+              "stock_id": "stock-2440-1830",
+              "stock_rotated_90": false,
+              "part_rotated_90": false,
+              "width": 8000,
+              "height": 3000
+            },
+            {
+              "stock_id": "stock-2440-1830",
+              "stock_rotated_90": true,
+              "part_rotated_90": true,
+              "width": 3000,
+              "height": 8000
+            }
+          ]
+        }
+      ],
+      "instances": [
+        {
+          "instance_id": "p-puerta#1",
+          "part_id": "p-puerta",
+          "material_id": "mel-blanca-18",
+          "ordinal": 1,
+          "width": 6000,
+          "height": 4000,
+          "priority": 2,
+          "eligible": true
+        },
+        {
+          "instance_id": "p-puerta#2",
+          "part_id": "p-puerta",
+          "material_id": "mel-blanca-18",
+          "ordinal": 2,
+          "width": 6000,
+          "height": 4000,
+          "priority": 2,
+          "eligible": true
+        },
+        {
+          "instance_id": "p-puerta#3",
+          "part_id": "p-puerta",
+          "material_id": "mel-blanca-18",
+          "ordinal": 3,
+          "width": 6000,
+          "height": 4000,
+          "priority": 2,
+          "eligible": true
+        },
+        {
+          "instance_id": "p-puerta#4",
+          "part_id": "p-puerta",
+          "material_id": "mel-blanca-18",
+          "ordinal": 4,
+          "width": 6000,
+          "height": 4000,
+          "priority": 2,
+          "eligible": true
+        },
+        {
+          "instance_id": "p-estante#1",
+          "part_id": "p-estante",
+          "material_id": "mel-blanca-18",
+          "ordinal": 1,
+          "width": 8000,
+          "height": 3000,
+          "priority": 0,
+          "eligible": true
+        },
+        {
+          "instance_id": "p-estante#2",
+          "part_id": "p-estante",
+          "material_id": "mel-blanca-18",
+          "ordinal": 2,
+          "width": 8000,
+          "height": 3000,
+          "priority": 0,
+          "eligible": true
+        },
+        {
+          "instance_id": "p-estante#3",
+          "part_id": "p-estante",
+          "material_id": "mel-blanca-18",
+          "ordinal": 3,
+          "width": 8000,
+          "height": 3000,
+          "priority": 0,
+          "eligible": true
+        },
+        {
+          "instance_id": "p-estante#4",
+          "part_id": "p-estante",
+          "material_id": "mel-blanca-18",
+          "ordinal": 4,
+          "width": 8000,
+          "height": 3000,
+          "priority": 0,
+          "eligible": true
+        },
+        {
+          "instance_id": "p-estante#5",
+          "part_id": "p-estante",
+          "material_id": "mel-blanca-18",
+          "ordinal": 5,
+          "width": 8000,
+          "height": 3000,
+          "priority": 0,
+          "eligible": true
+        },
+        {
+          "instance_id": "p-estante#6",
+          "part_id": "p-estante",
+          "material_id": "mel-blanca-18",
+          "ordinal": 6,
+          "width": 8000,
+          "height": 3000,
+          "priority": 0,
+          "eligible": true
+        },
+        {
+          "instance_id": "p-estante#7",
+          "part_id": "p-estante",
+          "material_id": "mel-blanca-18",
+          "ordinal": 7,
+          "width": 8000,
+          "height": 3000,
+          "priority": 0,
+          "eligible": true
+        },
+        {
+          "instance_id": "p-estante#8",
+          "part_id": "p-estante",
+          "material_id": "mel-blanca-18",
+          "ordinal": 8,
+          "width": 8000,
+          "height": 3000,
+          "priority": 0,
+          "eligible": true
+        }
+      ],
+      "warnings": []
+    }
+  }
+}

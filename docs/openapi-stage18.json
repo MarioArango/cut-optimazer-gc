@@ -1,0 +1,476 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Industrial Cutting Optimizer – REST API en Rust",
+    "version": "0.18.0",
+    "description": "Motor autónomo Rust; las operaciones JSON están definidas por JobOperation en optimizer-core. Este documento describe el transporte HTTP; el esquema específico de cada operation.type se muestra con ejemplos ejecutables en la colección Postman."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8080"
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "summary": "Health check (público)",
+        "responses": {
+          "200": {
+            "description": "Servidor disponible"
+          }
+        }
+      }
+    },
+    "/api/v1/capabilities": {
+      "get": {
+        "summary": "Operaciones y versión del núcleo",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Capacidades de cálculo"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/openapi.json": {
+      "get": {
+        "summary": "Contrato OpenAPI de la fachada REST",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documentación estática de API"
+          }
+        }
+      }
+    },
+    "/api/v1/jobs": {
+      "post": {
+        "summary": "Ejecutar trabajo",
+        "description": "Realiza el trabajo sincrónicamente; 200 no garantiza completitud geométrica, revisar output.result.complete_order / output.report.valid según operación.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Respuesta de trabajo o validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "413": {
+            "description": "Cuerpo demasiado grande",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Fallo de validación u operación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Concurrencia llena",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/validate": {
+      "post": {
+        "summary": "Validar solicitud",
+        "description": "Valida el contrato y los datos sin ejecutar la operación solicitada; validadores históricos pueden hacer cálculo de comprobación.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Respuesta de trabajo o validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "413": {
+            "description": "Cuerpo demasiado grande",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Fallo de validación u operación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Concurrencia llena",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cut-plans": {
+      "post": {
+        "summary": "Generar planos de corte",
+        "description": "Igual que /api/v1/jobs pero solo acepta operation.type = generate_cut_plans y devuelve directamente el documento de planos {success, message, complete_order, remaining_parts, records[]} (snake_case, medidas numéricas). Formato descrito en docs/CUT_PLANS.md.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Planos de corte (records → boards → cuts / parts, en mm)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "records"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "complete_order": {
+                      "type": "boolean"
+                    },
+                    "remaining_parts": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "413": {
+            "description": "Cuerpo demasiado grande",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Content-Type inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Fallo de validación u operación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Concurrencia llena",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/viewer": {
+      "get": {
+        "summary": "Visor de planos",
+        "description": "Página HTML autónoma para ver, inspeccionar e imprimir planos. No contiene datos; las solicitudes que envía usan los endpoints autenticados.",
+        "responses": {
+          "200": {
+            "description": "HTML",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Sólo se requiere cuando OPTIMIZER_API_KEY está definido."
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Token ausente o incorrecto",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "JobRequest": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "job_id",
+          "operation"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "enum": [
+              "1.0"
+            ]
+          },
+          "job_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]{1,64}$"
+          },
+          "options": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "seed": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "max_runtime_ms": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 3600000
+              }
+            }
+          },
+          "operation": {
+            "type": "object",
+            "description": "Objeto de operación. Ver modelos y ejemplos en carpeta examples/.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "system_check",
+                  "validate_model",
+                  "preprocess_model",
+                  "geometry_split",
+                  "guillotine_evaluate",
+                  "validate_layout",
+                  "generate_two_stage",
+                  "generate_three_stage",
+                  "generate_multi_board",
+                  "generate_stacked_multi_board",
+                  "plan_full_board_stacks",
+                  "simulate_production",
+                  "plan_strip_stacks",
+                  "plan_dynamic_stacks",
+                  "schedule_production",
+                  "optimize_global",
+                  "evaluate_economics",
+                  "compare_economic_layouts"
+                ]
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.0",
+  "job_id": "pedido-rovere-4408",
+  "options": {
+    "seed": 42,
+    "max_runtime_ms": 30000
+  },
+  "operation": {
+    "type": "generate_cut_plans",
+    "model": {
+      "materials": [
+        {
+          "id": "rovere18",
+          "name": "BNOVOPN0118//Novopan Melamina Rovere 2150x2440 18mm",
+          "thickness": 180,
+          "directional_grain": true
+        }
+      ],
+      "parts": [
+        {
+          "id": "item-1",
+          "material_id": "rovere18",
+          "width": 13100,
+          "height": 8100,
+          "quantity": 30,
+          "allow_rotate_90": false,
+          "grain_axis": "x",
+          "priority": 0
+        },
+        {
+          "id": "item-2",
+          "material_id": "rovere18",
+          "width": 7500,
+          "height": 8100,
+          "quantity": 30,
+          "allow_rotate_90": false,
+          "grain_axis": "x",
+          "priority": 0
+        },
+        {
+          "id": "item-3",
+          "material_id": "rovere18",
+          "width": 12630,
+          "height": 3000,
+          "quantity": 15,
+          "allow_rotate_90": true,
+          "grain_axis": null,
+          "priority": 0
+        },
+        {
+          "id": "item-4",
+          "material_id": "rovere18",
+          "width": 15000,
+          "height": 10000,
+          "quantity": 30,
+          "allow_rotate_90": false,
+          "grain_axis": "x",
+          "priority": 0
+        },
+        {
+          "id": "item-5",
+          "material_id": "rovere18",
+          "width": 15000,
+          "height": 1500,
+          "quantity": 30,
+          "allow_rotate_90": false,
+          "grain_axis": "x",
+          "priority": 0
+        },
+        {
+          "id": "item-6",
+          "material_id": "rovere18",
+          "width": 10000,
+          "height": 1500,
+          "quantity": 15,
+          "allow_rotate_90": false,
+          "grain_axis": "x",
+          "priority": 0
+        },
+        {
+          "id": "item-7",
+          "material_id": "rovere18",
+          "width": 5000,
+          "height": 2000,
+          "quantity": 15,
+          "allow_rotate_90": true,
+          "grain_axis": null,
+          "priority": 0
+        },
+        {
+          "id": "item-8",
+          "material_id": "rovere18",
+          "width": 5000,
+          "height": 1200,
+          "quantity": 30,
+          "allow_rotate_90": true,
+          "grain_axis": null,
+          "priority": 0
+        },
+        {
+          "id": "item-9",
+          "material_id": "rovere18",
+          "width": 4500,
+          "height": 1200,
+          "quantity": 60,
+          "allow_rotate_90": true,
+          "grain_axis": null,
+          "priority": 0
+        },
+        {
+          "id": "item-10",
+          "material_id": "rovere18",
+          "width": 5590,
+          "height": 1200,
+          "quantity": 30,
+          "allow_rotate_90": true,
+          "grain_axis": null,
+          "priority": 0
+        },
+        {
+          "id": "item-11",
+          "material_id": "rovere18",
+          "width": 5590,
+          "height": 1000,
+          "quantity": 30,
+          "allow_rotate_90": true,
+          "grain_axis": null,
+          "priority": 0
+        },
+        {
+          "id": "item-12",
+          "material_id": "rovere18",
+          "width": 1400,
+          "height": 6210,
+          "quantity": 30,
+          "allow_rotate_90": false,
+          "grain_axis": "x",
+          "priority": 0
+        }
+      ],
+      "stocks": [
+        {
+          "id": "rovere-2440x2140",
+          "material_id": "rovere18",
+          "kind": "full_board",
+          "width": 24400,
+          "height": 21400,
+          "thickness": 180,
+          "quantity": 60,
+          "grain_axis": "x",
+          "trim": {
+            "top": 50,
+            "right": 50,
+            "bottom": 50,
+            "left": 50
+          },
+          "unit_cost_minor": 25000
+        }
+      ],
+      "machine": {
+        "id": "seccionadora",
+        "kerf": 44,
+        "max_cut_length": 24400,
+        "min_piece_width": 500,
+        "min_piece_height": 500,
+        "min_strip_width": 500,
+        "min_clamp_width": 500,
+        "max_stack_height": 600,
+        "max_stack_members": 3,
+        "allow_board_rotation": false,
+        "allow_recuts": true,
+        "allowed_patterns": [
+          "V-H",
+          "H-V",
+          "V-H-V",
+          "H-V-H"
+        ],
+        "stacking": {
+          "full_boards": true,
+          "strips": true,
+          "restacking": true
+        }
+      }
+    }
+  }
+}

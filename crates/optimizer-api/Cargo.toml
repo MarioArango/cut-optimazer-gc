@@ -1,0 +1,16 @@
+[package]
+name = "optimizer-api"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+optimizer-core = { path = "../optimizer-core" }
+serde.workspace = true
+serde_json.workspace = true
+axum = { version = "0.7", features = ["json"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "signal", "sync"] }
+
+[dev-dependencies]
+tower = { version = "0.4", features = ["util"] }
+http-body-util = "0.1"

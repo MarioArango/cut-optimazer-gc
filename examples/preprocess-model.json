@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0",
+  "job_id": "preprocess-melamina-001",
+  "options": {
+    "seed": 2026,
+    "max_runtime_ms": 30000
+  },
+  "operation": {
+    "type": "preprocess_model",
+    "model": {
+      "materials": [
+        {
+          "id": "mel-blanca-18",
+          "name": "Melamina blanca 18 mm",
+          "thickness": 180,
+          "directional_grain": true
+        }
+      ],
+      "parts": [
+        {
+          "id": "p-puerta",
+          "material_id": "mel-blanca-18",
+          "width": 6000,
+          "height": 4000,
+          "quantity": 4,
+          "allow_rotate_90": false,
+          "grain_axis": "x",
+          "priority": 2
+        },
+        {
+          "id": "p-estante",
+          "material_id": "mel-blanca-18",
+          "width": 8000,
+          "height": 3000,
+          "quantity": 8,
+          "allow_rotate_90": true,
+          "grain_axis": "x"
+        }
+      ],
+      "stocks": [
+        {
+          "id": "stock-2440-1830",
+          "material_id": "mel-blanca-18",
+          "kind": "full_board",
+          "width": 24400,
+          "height": 18300,
+          "thickness": 180,
+          "quantity": 10,
+          "grain_axis": "x",
+          "trim": {
+            "top": 100,
+            "right": 100,
+            "bottom": 100,
+            "left": 100
+          },
+          "unit_cost_minor": 18000
+        }
+      ],
+      "machine": {
+        "id": "seccionadora-01",
+        "kerf": 32,
+        "max_cut_length": 30000,
+        "min_piece_width": 250,
+        "min_piece_height": 250,
+        "min_strip_width": 400,
+        "min_clamp_width": 350,
+        "max_stack_height": 800,
+        "max_stack_members": 4,
+        "allow_board_rotation": true,
+        "allow_recuts": true,
+        "allowed_patterns": [
+          "V-H",
+          "H-V",
+          "V-H-V",
+          "H-V-H"
+        ],
+        "stacking": {
+          "full_boards": true,
+          "strips": true,
+          "restacking": true
+        }
+      },
+      "patterns": [],
+      "workpieces": [],
+      "stacks": []
+    }
+  }
+}

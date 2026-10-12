@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "job_id": "demo-stack-001",
+  "engine_version": "0.18.0",
+  "status": "completed",
+  "seed": 2026,
+  "output": {
+    "type": "system_check",
+    "core_ready": true,
+    "optimization_available": true,
+    "echo": "Optimizador industrial: infraestructura preparada para etapas futuras"
+  }
+}

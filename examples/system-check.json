@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "job_id": "demo-stack-001",
+  "options": {
+    "seed": 2026,
+    "max_runtime_ms": 30000
+  },
+  "operation": {
+    "type": "system_check",
+    "echo": "Optimizador industrial: infraestructura preparada para etapas futuras"
+  }
+}

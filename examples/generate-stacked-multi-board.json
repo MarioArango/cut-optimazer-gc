@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0",
+  "job_id": "stack-aware-generator-001",
+  "options": {
+    "seed": 2026,
+    "max_runtime_ms": 30000
+  },
+  "operation": {
+    "type": "generate_stacked_multi_board",
+    "model": {
+      "materials": [
+        {
+          "id": "mel18",
+          "name": "Melamina 18mm",
+          "thickness": 180,
+          "directional_grain": false
+        }
+      ],
+      "parts": [
+        {
+          "id": "PANEL",
+          "material_id": "mel18",
+          "width": 1000,
+          "height": 600,
+          "quantity": 3,
+          "allow_rotate_90": false,
+          "grain_axis": null,
+          "priority": 0
+        }
+      ],
+      "stocks": [
+        {
+          "id": "stock-mel18",
+          "material_id": "mel18",
+          "kind": "full_board",
+          "width": 1000,
+          "height": 800,
+          "thickness": 180,
+          "quantity": 3,
+          "grain_axis": null,
+          "trim": {
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          },
+          "unit_cost_minor": 2500
+        }
+      ],
+      "machine": {
+        "id": "saw",
+        "kerf": 10,
+        "max_cut_length": 2000,
+        "min_piece_width": 50,
+        "min_piece_height": 50,
+        "min_strip_width": 50,
+        "min_clamp_width": 50,
+        "max_stack_height": 540,
+        "max_stack_members": 3,
+        "allow_board_rotation": true,
+        "allow_recuts": true,
+        "allowed_patterns": [
+          "V-H",
+          "H-V"
+        ],
+        "stacking": {
+          "full_boards": true,
+          "strips": true,
+          "restacking": true
+        }
+      },
+      "patterns": [],
+      "workpieces": [],
+      "stacks": []
+    },
+    "max_boards": 10,
+    "restarts": 3,
+    "beam_width": 8,
+    "max_expansions": 250,
+    "costs": {
+      "cut_cost_units": 10,
+      "stack_setup_cost_units": 5,
+      "stack_release_cost_units": 5
+    }
+  }
+}

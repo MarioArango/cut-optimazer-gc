@@ -1,0 +1,9 @@
+[package]
+name = "optimizer-cli"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+optimizer-core = { path = "../optimizer-core" }
+serde_json.workspace = true

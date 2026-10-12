@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "job_id": "geometria-corte-vertical-001",
+  "options": { "seed": 2026, "max_runtime_ms": 30000 },
+  "operation": {
+    "type": "geometry_split",
+    "rect": { "x": 100, "y": 200, "width": 1000, "height": 600 },
+    "direction": "vertical",
+    "at": 400,
+    "kerf": 32
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0",
+  "job_id": "tree-rotated-001",
+  "operation": {
+    "type": "guillotine_evaluate",
+    "model": {
+      "materials": [
+        {
+          "id": "mel18",
+          "name": "Melamina veta X",
+          "thickness": 180,
+          "directional_grain": true
+        }
+      ],
+      "parts": [
+        {
+          "id": "A",
+          "material_id": "mel18",
+          "width": 400,
+          "height": 300,
+          "quantity": 2,
+          "allow_rotate_90": false,
+          "grain_axis": "x",
+          "priority": 0
+        },
+        {
+          "id": "B",
+          "material_id": "mel18",
+          "width": 250,
+          "height": 300,
+          "quantity": 2,
+          "allow_rotate_90": false,
+          "grain_axis": "x",
+          "priority": 0
+        },
+        {
+          "id": "C",
+          "material_id": "mel18",
+          "width": 310,
+          "height": 300,
+          "quantity": 2,
+          "allow_rotate_90": false,
+          "grain_axis": "x",
+          "priority": 0
+        },
+        {
+          "id": "D",
+          "material_id": "mel18",
+          "width": 400,
+          "height": 120,
+          "quantity": 2,
+          "allow_rotate_90": false,
+          "grain_axis": "x",
+          "priority": 0
+        },
+        {
+          "id": "E",
+          "material_id": "mel18",
+          "width": 400,
+          "height": 170,
+          "quantity": 2,
+          "allow_rotate_90": false,
+          "grain_axis": "x",
+          "priority": 0
+        }
+      ],
+      "stocks": [
+        {
+          "id": "board1000",
+          "material_id": "mel18",
+          "kind": "full_board",
+          "width": 1000,
+          "height": 800,
+          "thickness": 180,
+          "quantity": 5,
+          "grain_axis": "x",
+          "trim": {
+            "left": 10,
+            "right": 10,
+            "top": 10,
+            "bottom": 10
+          },
+          "unit_cost_minor": 5000
+        }
+      ],
+      "machine": {
+        "id": "saw",
+        "kerf": 10,
+        "max_cut_length": 1500,
+        "min_piece_width": 50,
+        "min_piece_height": 50,
+        "min_strip_width": 50,
+        "min_clamp_width": 50,
+        "max_stack_height": 800,
+        "max_stack_members": 4,
+        "allow_board_rotation": true,
+        "allow_recuts": true,
+        "allowed_patterns": [
+          "V-H",
+          "H-V",
+          "V-H-V",
+          "H-V-H"
+        ],
+        "stacking": {
+          "full_boards": true,
+          "strips": true,
+          "restacking": true
+        }
+      },
+      "patterns": [
+        {
+          "id": "p",
+          "stock_id": "board1000",
+          "mode": "V-H",
+          "root": {
+            "kind": "residual",
+            "node_id": "all",
+            "reusable": true
+          }
+        }
+      ],
+      "workpieces": [],
+      "stacks": []
+    },
+    "pattern_id": "p",
+    "board_rotated_90": true
+  }
+}

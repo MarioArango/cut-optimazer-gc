@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "job_id": "geometria-corte-vertical-001",
+  "engine_version": "0.18.0",
+  "status": "completed",
+  "seed": 2026,
+  "output": {
+    "type": "geometry_split",
+    "split": {
+      "direction": "vertical",
+      "at": 400,
+      "kerf": 32,
+      "first": {
+        "x": 100,
+        "y": 200,
+        "width": 400,
+        "height": 600
+      },
+      "saw_path": {
+        "x": 500,
+        "y": 200,
+        "width": 32,
+        "height": 600
+      },
+      "second": {
+        "x": 532,
+        "y": 200,
+        "width": 568,
+        "height": 600
+      }
+    }
+  }
+}

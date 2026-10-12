@@ -1,0 +1,16 @@
+{
+  "stage": 18,
+  "version": "0.18.0",
+  "rust_project": "independent",
+  "json_files_parsed": 85,
+  "toml_files_parsed": 6,
+  "postman_requests": 24,
+  "rust_core_files_retained": 21,
+  "test_functions_written_total": 336,
+  "new_rust_lexer_delimiters": "passed",
+  "postman_fixtures": "matching",
+  "cargo_build": "NOT_RUN_cargo_unavailable",
+  "cargo_test": "NOT_RUN_cargo_unavailable",
+  "benchmarks": "NOT_RUN_cargo_unavailable",
+  "machine_certification": "NOT_PERFORMED"
+}

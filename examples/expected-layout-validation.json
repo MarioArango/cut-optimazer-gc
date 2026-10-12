@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "job_id": "layout-valid-001",
+  "engine_version": "0.18.0",
+  "status": "completed",
+  "seed": 2026,
+  "output": {
+    "type": "layout_validation",
+    "report": {
+      "valid": true,
+      "issues": [],
+      "summary": {
+        "boards_submitted": 2,
+        "boards_geometry_verified": 2,
+        "requested_pieces": 2,
+        "verified_placed_pieces": 2,
+        "cuts_verified": 4,
+        "per_part_requested": {
+          "A": 2
+        },
+        "per_part_verified": {
+          "A": 2
+        },
+        "missing_per_part": {},
+        "extra_per_part": {},
+        "stock_usage": {
+          "board1000": 2
+        },
+        "verified_usable_area_sq_units": "1528800",
+        "verified_piece_area_sq_units": "240000",
+        "verified_residual_area_sq_units": "1265200",
+        "verified_kerf_area_sq_units": "23600",
+        "count_reconciliation_complete": true,
+        "geometry_validated": true,
+        "production_validated": false
+      }
+    }
+  }
+}

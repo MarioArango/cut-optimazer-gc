@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "job_id": "geometria-margenes-001",
+  "operation": {
+    "type": "geometry_trim",
+    "rect": { "x": 50, "y": 70, "width": 1000, "height": 500 },
+    "margins": { "top": 20, "right": 30, "bottom": 40, "left": 10 }
+  }
+}

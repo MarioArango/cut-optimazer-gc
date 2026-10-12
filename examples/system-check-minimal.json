@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0",
+  "job_id": "minimal-001",
+  "operation": {
+    "type": "system_check"
+  }
+}

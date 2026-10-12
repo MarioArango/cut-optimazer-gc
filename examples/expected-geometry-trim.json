@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "job_id": "geometria-margenes-001",
+  "engine_version": "0.18.0",
+  "status": "completed",
+  "seed": 42,
+  "output": {
+    "type": "geometry_trim",
+    "usable": {
+      "x": 60,
+      "y": 90,
+      "width": 960,
+      "height": 440
+    }
+  }
+}

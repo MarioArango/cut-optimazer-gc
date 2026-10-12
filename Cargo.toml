@@ -1,0 +1,16 @@
+[workspace]
+members = [
+    "crates/optimizer-core",
+    "crates/optimizer-cli",
+    "crates/optimizer-api",
+    "crates/optimizer-bench",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+version = "0.18.0"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

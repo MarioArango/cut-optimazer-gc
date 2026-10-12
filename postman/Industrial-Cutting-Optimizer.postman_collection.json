@@ -1,0 +1,680 @@
+{
+  "info": {
+    "name": "Industrial Cutting Optimizer · Rust API · Etapa 18",
+    "description": "API REST independiente 100% Rust. Ejecutar: cargo run --release -p optimizer-api. Dimensiones en décimas de mm. Contiene ejemplos reales del motor, no marcadores de posición.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8080"
+    },
+    {
+      "key": "apiKey",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Salud (sin autenticación)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/healthz",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ]
+      },
+      "response": []
+    },
+    {
+      "name": "00 - Capacidades",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/capabilities",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ]
+      },
+      "response": []
+    },
+    {
+      "name": "00 - OpenAPI",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/openapi.json",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ]
+      },
+      "response": []
+    },
+    {
+      "name": "01 - Comprobar motor",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"demo-stack-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"system_check\",\n    \"echo\": \"Optimizador industrial: infraestructura preparada para etapas futuras\"\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "02 - Validar modelo",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"modelo-melamina-001\",\n  \"options\": { \"seed\": 2026, \"max_runtime_ms\": 30000 },\n  \"operation\": {\n    \"type\": \"validate_model\",\n    \"model\": {\n      \"materials\": [\n        { \"id\": \"mel-blanca-18\", \"name\": \"Melamina blanca 18 mm\", \"thickness\": 180, \"directional_grain\": true }\n      ],\n      \"parts\": [\n        { \"id\": \"p-puerta\", \"material_id\": \"mel-blanca-18\", \"width\": 6000, \"height\": 4000, \"quantity\": 4, \"allow_rotate_90\": false, \"grain_axis\": \"x\", \"priority\": 2 },\n        { \"id\": \"p-estante\", \"material_id\": \"mel-blanca-18\", \"width\": 8000, \"height\": 3000, \"quantity\": 8, \"allow_rotate_90\": true, \"grain_axis\": \"x\" }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"stock-2440-1830\", \"material_id\": \"mel-blanca-18\", \"kind\": \"full_board\",\n          \"width\": 24400, \"height\": 18300, \"thickness\": 180, \"quantity\": 10,\n          \"grain_axis\": \"x\", \"trim\": { \"top\": 100, \"right\": 100, \"bottom\": 100, \"left\": 100 },\n          \"unit_cost_minor\": 18000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"seccionadora-01\", \"kerf\": 32, \"max_cut_length\": 30000,\n        \"min_piece_width\": 250, \"min_piece_height\": 250, \"min_strip_width\": 400,\n        \"min_clamp_width\": 350, \"max_stack_height\": 800, \"max_stack_members\": 4,\n        \"allow_board_rotation\": true, \"allow_recuts\": true,\n        \"allowed_patterns\": [\"V-H\", \"H-V\", \"V-H-V\", \"H-V-H\"],\n        \"stacking\": { \"full_boards\": true, \"strips\": true, \"restacking\": true }\n      },\n      \"patterns\": [\n        {\n          \"id\": \"pattern-demo-01\", \"stock_id\": \"stock-2440-1830\", \"mode\": \"V-H\",\n          \"root\": {\n            \"kind\": \"split\", \"node_id\": \"n-root\", \"direction\": \"vertical\", \"at\": 12000,\n            \"first\": { \"kind\": \"piece\", \"node_id\": \"n-pieza\", \"part_id\": \"p-puerta\", \"rotated\": false },\n            \"second\": { \"kind\": \"residual\", \"node_id\": \"n-sobrante\", \"reusable\": true }\n          }\n        }\n      ],\n      \"workpieces\": [\n        {\n          \"id\": \"b-001\", \"origin_stock_id\": \"stock-2440-1830\", \"origin_board_key\": \"tablero-001\",\n          \"parent_workpiece_id\": null, \"kind\": \"board\", \"material_id\": \"mel-blanca-18\",\n          \"width\": 24400, \"height\": 18300, \"thickness\": 180, \"grain_axis\": \"x\",\n          \"orientation\": \"0\", \"registration_edge\": \"left\", \"current_stage\": 0,\n          \"pattern_id\": \"pattern-demo-01\", \"pending_node_id\": \"n-root\"\n        },\n        {\n          \"id\": \"b-002\", \"origin_stock_id\": \"stock-2440-1830\", \"origin_board_key\": \"tablero-002\",\n          \"parent_workpiece_id\": null, \"kind\": \"board\", \"material_id\": \"mel-blanca-18\",\n          \"width\": 24400, \"height\": 18300, \"thickness\": 180, \"grain_axis\": \"x\",\n          \"orientation\": \"0\", \"registration_edge\": \"left\", \"current_stage\": 0,\n          \"pattern_id\": \"pattern-demo-01\", \"pending_node_id\": \"n-root\"\n        }\n      ],\n      \"stacks\": [\n        { \"id\": \"stack-tableros-01\", \"kind\": \"full_board\", \"member_ids\": [\"b-001\", \"b-002\"], \"orientation\": \"0\", \"registration_edge\": \"left\" }\n      ]\n    }\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "03 - Preparar datos",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"preprocess-melamina-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"preprocess_model\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel-blanca-18\",\n          \"name\": \"Melamina blanca 18 mm\",\n          \"thickness\": 180,\n          \"directional_grain\": true\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"p-puerta\",\n          \"material_id\": \"mel-blanca-18\",\n          \"width\": 6000,\n          \"height\": 4000,\n          \"quantity\": 4,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 2\n        },\n        {\n          \"id\": \"p-estante\",\n          \"material_id\": \"mel-blanca-18\",\n          \"width\": 8000,\n          \"height\": 3000,\n          \"quantity\": 8,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": \"x\"\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"stock-2440-1830\",\n          \"material_id\": \"mel-blanca-18\",\n          \"kind\": \"full_board\",\n          \"width\": 24400,\n          \"height\": 18300,\n          \"thickness\": 180,\n          \"quantity\": 10,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"top\": 100,\n            \"right\": 100,\n            \"bottom\": 100,\n            \"left\": 100\n          },\n          \"unit_cost_minor\": 18000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"seccionadora-01\",\n        \"kerf\": 32,\n        \"max_cut_length\": 30000,\n        \"min_piece_width\": 250,\n        \"min_piece_height\": 250,\n        \"min_strip_width\": 400,\n        \"min_clamp_width\": 350,\n        \"max_stack_height\": 800,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [],\n      \"workpieces\": [],\n      \"stacks\": []\n    }\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "04 - Dividir geometría",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"geometria-corte-vertical-001\",\n  \"options\": { \"seed\": 2026, \"max_runtime_ms\": 30000 },\n  \"operation\": {\n    \"type\": \"geometry_split\",\n    \"rect\": { \"x\": 100, \"y\": 200, \"width\": 1000, \"height\": 600 },\n    \"direction\": \"vertical\",\n    \"at\": 400,\n    \"kerf\": 32\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "05 - Validar árbol guillotina",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"tree-vhv-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"guillotine_evaluate\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina veta X\",\n          \"thickness\": 180,\n          \"directional_grain\": true\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"A\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 300,\n          \"quantity\": 2,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        },\n        {\n          \"id\": \"B\",\n          \"material_id\": \"mel18\",\n          \"width\": 250,\n          \"height\": 300,\n          \"quantity\": 2,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        },\n        {\n          \"id\": \"C\",\n          \"material_id\": \"mel18\",\n          \"width\": 310,\n          \"height\": 300,\n          \"quantity\": 2,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        },\n        {\n          \"id\": \"D\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 120,\n          \"quantity\": 2,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        },\n        {\n          \"id\": \"E\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 170,\n          \"quantity\": 2,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"board1000\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 800,\n          \"thickness\": 180,\n          \"quantity\": 5,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"left\": 10,\n            \"right\": 10,\n            \"top\": 10,\n            \"bottom\": 10\n          },\n          \"unit_cost_minor\": 5000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 1500,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 800,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [\n        {\n          \"id\": \"pattern-01\",\n          \"stock_id\": \"board1000\",\n          \"mode\": \"V-H-V\",\n          \"root\": {\n            \"kind\": \"split\",\n            \"node_id\": \"n-root\",\n            \"direction\": \"vertical\",\n            \"at\": 400,\n            \"first\": {\n              \"kind\": \"split\",\n              \"node_id\": \"n-left\",\n              \"direction\": \"horizontal\",\n              \"at\": 300,\n              \"first\": {\n                \"kind\": \"piece\",\n                \"node_id\": \"a\",\n                \"part_id\": \"A\",\n                \"rotated\": false\n              },\n              \"second\": {\n                \"kind\": \"residual\",\n                \"node_id\": \"r1\",\n                \"reusable\": true\n              }\n            },\n            \"second\": {\n              \"kind\": \"split\",\n              \"node_id\": \"n-right\",\n              \"direction\": \"horizontal\",\n              \"at\": 300,\n              \"first\": {\n                \"kind\": \"split\",\n                \"node_id\": \"n-right-top\",\n                \"direction\": \"vertical\",\n                \"at\": 250,\n                \"first\": {\n                  \"kind\": \"piece\",\n                  \"node_id\": \"b\",\n                  \"part_id\": \"B\",\n                  \"rotated\": false\n                },\n                \"second\": {\n                  \"kind\": \"piece\",\n                  \"node_id\": \"c\",\n                  \"part_id\": \"C\",\n                  \"rotated\": false\n                }\n              },\n              \"second\": {\n                \"kind\": \"residual\",\n                \"node_id\": \"r2\",\n                \"reusable\": true\n              }\n            }\n          }\n        }\n      ],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"pattern_id\": \"pattern-01\",\n    \"board_rotated_90\": false\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "06 - Validar plano completo",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"layout-valid-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"validate_layout\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina veta X\",\n          \"thickness\": 180,\n          \"directional_grain\": true\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"A\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 300,\n          \"quantity\": 2,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"board1000\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 800,\n          \"thickness\": 180,\n          \"quantity\": 5,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"left\": 10,\n            \"right\": 10,\n            \"top\": 10,\n            \"bottom\": 10\n          },\n          \"unit_cost_minor\": 5000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 1500,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 800,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [\n        {\n          \"id\": \"pattern-01\",\n          \"stock_id\": \"board1000\",\n          \"mode\": \"V-H\",\n          \"root\": {\n            \"kind\": \"split\",\n            \"node_id\": \"n-root\",\n            \"direction\": \"vertical\",\n            \"at\": 400,\n            \"first\": {\n              \"kind\": \"split\",\n              \"node_id\": \"n-left\",\n              \"direction\": \"horizontal\",\n              \"at\": 300,\n              \"first\": {\n                \"kind\": \"piece\",\n                \"node_id\": \"a\",\n                \"part_id\": \"A\",\n                \"rotated\": false\n              },\n              \"second\": {\n                \"kind\": \"residual\",\n                \"node_id\": \"r1\",\n                \"reusable\": true\n              }\n            },\n            \"second\": {\n              \"kind\": \"residual\",\n              \"node_id\": \"r2\",\n              \"reusable\": true\n            }\n          }\n        }\n      ],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"layout\": {\n      \"boards\": [\n        {\n          \"board_id\": \"board-1\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 0,\n          \"pattern_id\": \"pattern-01\",\n          \"board_rotated_90\": false\n        },\n        {\n          \"board_id\": \"board-2\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 1,\n          \"pattern_id\": \"pattern-01\",\n          \"board_rotated_90\": false\n        }\n      ]\n    }\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "07 - Generar 2 etapas",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"generate-two-stage-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"generate_two_stage\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina veta X\",\n          \"thickness\": 180,\n          \"directional_grain\": true\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"A\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 300,\n          \"quantity\": 2,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"board1000\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 800,\n          \"thickness\": 180,\n          \"quantity\": 5,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"left\": 10,\n            \"right\": 10,\n            \"top\": 10,\n            \"bottom\": 10\n          },\n          \"unit_cost_minor\": 5000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 1500,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 800,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"stock_id\": \"board1000\"\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "08 - Generar 3 etapas",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"generate-three-stage-vhv-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"generate_three_stage\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina veta X\",\n          \"thickness\": 180,\n          \"directional_grain\": false\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"A\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 300,\n          \"quantity\": 1,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"B\",\n          \"material_id\": \"mel18\",\n          \"width\": 300,\n          \"height\": 300,\n          \"quantity\": 1,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"C\",\n          \"material_id\": \"mel18\",\n          \"width\": 250,\n          \"height\": 200,\n          \"quantity\": 1,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"D\",\n          \"material_id\": \"mel18\",\n          \"width\": 450,\n          \"height\": 200,\n          \"quantity\": 1,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": null,\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"board1000\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 600,\n          \"thickness\": 180,\n          \"quantity\": 5,\n          \"grain_axis\": null,\n          \"trim\": {\n            \"left\": 0,\n            \"right\": 0,\n            \"top\": 0,\n            \"bottom\": 0\n          },\n          \"unit_cost_minor\": 5000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 1500,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 800,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": false,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H-V\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"stock_id\": \"board1000\",\n    \"beam_width\": 12,\n    \"max_expansions\": 1500\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "09 - Optimizar múltiples tableros",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"multi-board-example-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"generate_multi_board\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina 18mm\",\n          \"thickness\": 180,\n          \"directional_grain\": false\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"PANEL\",\n          \"material_id\": \"mel18\",\n          \"width\": 1000,\n          \"height\": 600,\n          \"quantity\": 3,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": null,\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"cheap\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 600,\n          \"thickness\": 180,\n          \"quantity\": 2,\n          \"grain_axis\": null,\n          \"trim\": {\n            \"top\": 0,\n            \"right\": 0,\n            \"bottom\": 0,\n            \"left\": 0\n          },\n          \"unit_cost_minor\": 2500\n        },\n        {\n          \"id\": \"expensive\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 600,\n          \"thickness\": 180,\n          \"quantity\": 2,\n          \"grain_axis\": null,\n          \"trim\": {\n            \"top\": 0,\n            \"right\": 0,\n            \"bottom\": 0,\n            \"left\": 0\n          },\n          \"unit_cost_minor\": 5500\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 2000,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 800,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"max_boards\": 10,\n    \"restarts\": 3,\n    \"beam_width\": 8,\n    \"max_expansions\": 250\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "10 - Optimizar tableros apilados",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"stack-aware-generator-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"generate_stacked_multi_board\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina 18mm\",\n          \"thickness\": 180,\n          \"directional_grain\": false\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"PANEL\",\n          \"material_id\": \"mel18\",\n          \"width\": 1000,\n          \"height\": 600,\n          \"quantity\": 3,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": null,\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"stock-mel18\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 800,\n          \"thickness\": 180,\n          \"quantity\": 3,\n          \"grain_axis\": null,\n          \"trim\": {\n            \"top\": 0,\n            \"right\": 0,\n            \"bottom\": 0,\n            \"left\": 0\n          },\n          \"unit_cost_minor\": 2500\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 2000,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 540,\n        \"max_stack_members\": 3,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"max_boards\": 10,\n    \"restarts\": 3,\n    \"beam_width\": 8,\n    \"max_expansions\": 250,\n    \"costs\": {\n      \"cut_cost_units\": 10,\n      \"stack_setup_cost_units\": 5,\n      \"stack_release_cost_units\": 5\n    }\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "11 - Planificar paquetes de tableros",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"stack-full-boards-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"plan_full_board_stacks\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina veta X\",\n          \"thickness\": 180,\n          \"directional_grain\": true\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"A\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 300,\n          \"quantity\": 4,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"board1000\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 800,\n          \"thickness\": 180,\n          \"quantity\": 5,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"left\": 10,\n            \"right\": 10,\n            \"top\": 10,\n            \"bottom\": 10\n          },\n          \"unit_cost_minor\": 5000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 1500,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 540,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [\n        {\n          \"id\": \"pattern-01\",\n          \"stock_id\": \"board1000\",\n          \"mode\": \"V-H\",\n          \"root\": {\n            \"kind\": \"split\",\n            \"node_id\": \"n-root\",\n            \"direction\": \"vertical\",\n            \"at\": 400,\n            \"first\": {\n              \"kind\": \"split\",\n              \"node_id\": \"n-left\",\n              \"direction\": \"horizontal\",\n              \"at\": 300,\n              \"first\": {\n                \"kind\": \"piece\",\n                \"node_id\": \"a\",\n                \"part_id\": \"A\",\n                \"rotated\": false\n              },\n              \"second\": {\n                \"kind\": \"residual\",\n                \"node_id\": \"r1\",\n                \"reusable\": true\n              }\n            },\n            \"second\": {\n              \"kind\": \"residual\",\n              \"node_id\": \"r2\",\n              \"reusable\": true\n            }\n          }\n        }\n      ],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"layout\": {\n      \"boards\": [\n        {\n          \"board_id\": \"B1\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 0,\n          \"pattern_id\": \"pattern-01\",\n          \"board_rotated_90\": false\n        },\n        {\n          \"board_id\": \"B2\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 1,\n          \"pattern_id\": \"pattern-01\",\n          \"board_rotated_90\": false\n        },\n        {\n          \"board_id\": \"B3\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 2,\n          \"pattern_id\": \"pattern-01\",\n          \"board_rotated_90\": false\n        },\n        {\n          \"board_id\": \"B4\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 3,\n          \"pattern_id\": \"pattern-01\",\n          \"board_rotated_90\": false\n        }\n      ]\n    },\n    \"costs\": {\n      \"cut_cost_units\": 10,\n      \"stack_setup_cost_units\": 5,\n      \"stack_release_cost_units\": 5\n    }\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "12 - Simular producción",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"simulate-stage11-valid\",\n  \"options\": {\n    \"seed\": 11,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"simulate_production\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina veta X\",\n          \"thickness\": 180,\n          \"directional_grain\": true\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"A\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 300,\n          \"quantity\": 4,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"board1000\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 800,\n          \"thickness\": 180,\n          \"quantity\": 5,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"left\": 10,\n            \"right\": 10,\n            \"top\": 10,\n            \"bottom\": 10\n          },\n          \"unit_cost_minor\": 5000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 1500,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 540,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [\n        {\n          \"id\": \"pattern-01\",\n          \"stock_id\": \"board1000\",\n          \"mode\": \"V-H\",\n          \"root\": {\n            \"kind\": \"split\",\n            \"node_id\": \"n-root\",\n            \"direction\": \"vertical\",\n            \"at\": 400,\n            \"first\": {\n              \"kind\": \"split\",\n              \"node_id\": \"n-left\",\n              \"direction\": \"horizontal\",\n              \"at\": 300,\n              \"first\": {\n                \"kind\": \"piece\",\n                \"node_id\": \"a\",\n                \"part_id\": \"A\",\n                \"rotated\": false\n              },\n              \"second\": {\n                \"kind\": \"residual\",\n                \"node_id\": \"r1\",\n                \"reusable\": true\n              }\n            },\n            \"second\": {\n              \"kind\": \"residual\",\n              \"node_id\": \"r2\",\n              \"reusable\": true\n            }\n          }\n        }\n      ],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"plan\": {\n      \"initial_boards\": [\n        {\n          \"board_id\": \"b0\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 0\n        },\n        {\n          \"board_id\": \"b1\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 1\n        }\n      ],\n      \"operations\": [\n        {\n          \"type\": \"stack\",\n          \"stack_id\": \"whole\",\n          \"member_ids\": [\n            \"b0\",\n            \"b1\"\n          ]\n        },\n        {\n          \"type\": \"cut_stack\",\n          \"stack_id\": \"whole\",\n          \"direction\": \"vertical\",\n          \"at\": 400,\n          \"first_stack_id\": \"left\",\n          \"second_stack_id\": \"right\",\n          \"first_member_ids\": [\n            \"b0_left\",\n            \"b1_left\"\n          ],\n          \"second_member_ids\": [\n            \"b0_right\",\n            \"b1_right\"\n          ]\n        },\n        {\n          \"type\": \"unstack\",\n          \"stack_id\": \"left\"\n        },\n        {\n          \"type\": \"cut_workpiece\",\n          \"workpiece_id\": \"b0_left\",\n          \"direction\": \"horizontal\",\n          \"at\": 300,\n          \"first_id\": \"piece_A_1\",\n          \"second_id\": \"offcut_A_1\"\n        },\n        {\n          \"type\": \"finish\",\n          \"workpiece_id\": \"piece_A_1\",\n          \"part_id\": \"A\",\n          \"rotated\": false\n        },\n        {\n          \"type\": \"scrap\",\n          \"workpiece_id\": \"offcut_A_1\",\n          \"reusable\": true\n        },\n        {\n          \"type\": \"move_stack\",\n          \"stack_id\": \"right\",\n          \"station\": \"outfeed\"\n        },\n        {\n          \"type\": \"rotate_stack\",\n          \"stack_id\": \"right\"\n        }\n      ]\n    }\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "13 - Planificar apilados de franjas",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"strip-stack-three-boards\",\n  \"options\": {\n    \"seed\": 12,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"plan_strip_stacks\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina veta X\",\n          \"thickness\": 180,\n          \"directional_grain\": true\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"A\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 300,\n          \"quantity\": 4,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"board1000\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 800,\n          \"thickness\": 180,\n          \"quantity\": 5,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"left\": 10,\n            \"right\": 10,\n            \"top\": 10,\n            \"bottom\": 10\n          },\n          \"unit_cost_minor\": 5000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 1500,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 540,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [\n        {\n          \"id\": \"pattern-01\",\n          \"stock_id\": \"board1000\",\n          \"mode\": \"V-H\",\n          \"root\": {\n            \"kind\": \"split\",\n            \"node_id\": \"n-root\",\n            \"direction\": \"vertical\",\n            \"at\": 400,\n            \"first\": {\n              \"kind\": \"split\",\n              \"node_id\": \"n-left\",\n              \"direction\": \"horizontal\",\n              \"at\": 300,\n              \"first\": {\n                \"kind\": \"piece\",\n                \"node_id\": \"a\",\n                \"part_id\": \"A\",\n                \"rotated\": false\n              },\n              \"second\": {\n                \"kind\": \"residual\",\n                \"node_id\": \"r1\",\n                \"reusable\": true\n              }\n            },\n            \"second\": {\n              \"kind\": \"residual\",\n              \"node_id\": \"r2\",\n              \"reusable\": true\n            }\n          }\n        }\n      ],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"plan\": {\n      \"initial_boards\": [\n        {\n          \"board_id\": \"b0\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 0,\n          \"rotated_90\": false\n        },\n        {\n          \"board_id\": \"b1\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 1,\n          \"rotated_90\": false\n        },\n        {\n          \"board_id\": \"b2\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 2,\n          \"rotated_90\": false\n        }\n      ],\n      \"operations\": [\n        {\n          \"type\": \"cut_workpiece\",\n          \"workpiece_id\": \"b0\",\n          \"direction\": \"vertical\",\n          \"at\": 400,\n          \"first_id\": \"b0_left\",\n          \"second_id\": \"b0_right\"\n        },\n        {\n          \"type\": \"cut_workpiece\",\n          \"workpiece_id\": \"b1\",\n          \"direction\": \"vertical\",\n          \"at\": 400,\n          \"first_id\": \"b1_left\",\n          \"second_id\": \"b1_right\"\n        },\n        {\n          \"type\": \"cut_workpiece\",\n          \"workpiece_id\": \"b2\",\n          \"direction\": \"vertical\",\n          \"at\": 400,\n          \"first_id\": \"b2_left\",\n          \"second_id\": \"b2_right\"\n        }\n      ]\n    },\n    \"next_cuts\": [\n      {\n        \"workpiece_id\": \"b0_left\",\n        \"direction\": \"horizontal\",\n        \"at\": 300\n      },\n      {\n        \"workpiece_id\": \"b1_left\",\n        \"direction\": \"horizontal\",\n        \"at\": 300\n      },\n      {\n        \"workpiece_id\": \"b2_left\",\n        \"direction\": \"horizontal\",\n        \"at\": 300\n      },\n      {\n        \"workpiece_id\": \"b0_right\",\n        \"direction\": \"horizontal\",\n        \"at\": 350\n      },\n      {\n        \"workpiece_id\": \"b1_right\",\n        \"direction\": \"horizontal\",\n        \"at\": 350\n      }\n    ],\n    \"stack_options\": {\n      \"max_groups\": 10,\n      \"saw_pass_cost_minor\": 150,\n      \"stack_handling_cost_minor\": 35,\n      \"followup_handling_cost_minor\": 25,\n      \"require_positive_savings\": true,\n      \"include_existing_stacks\": true\n    }\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "14 - Apilados dinámicos",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"plan-dynamic-stacks\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"plan_dynamic_stacks\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina veta X\",\n          \"thickness\": 180,\n          \"directional_grain\": true\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"A\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 300,\n          \"quantity\": 4,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"board1000\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 800,\n          \"thickness\": 180,\n          \"quantity\": 5,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"left\": 10,\n            \"right\": 10,\n            \"top\": 10,\n            \"bottom\": 10\n          },\n          \"unit_cost_minor\": 5000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 1500,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 540,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [\n        {\n          \"id\": \"pattern-01\",\n          \"stock_id\": \"board1000\",\n          \"mode\": \"V-H\",\n          \"root\": {\n            \"kind\": \"split\",\n            \"node_id\": \"n-root\",\n            \"direction\": \"vertical\",\n            \"at\": 400,\n            \"first\": {\n              \"kind\": \"split\",\n              \"node_id\": \"n-left\",\n              \"direction\": \"horizontal\",\n              \"at\": 300,\n              \"first\": {\n                \"kind\": \"piece\",\n                \"node_id\": \"a\",\n                \"part_id\": \"A\",\n                \"rotated\": false\n              },\n              \"second\": {\n                \"kind\": \"residual\",\n                \"node_id\": \"r1\",\n                \"reusable\": true\n              }\n            },\n            \"second\": {\n              \"kind\": \"residual\",\n              \"node_id\": \"r2\",\n              \"reusable\": true\n            }\n          }\n        }\n      ],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"plan\": {\n      \"initial_boards\": [\n        {\n          \"board_id\": \"b0\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 0,\n          \"rotated_90\": false\n        },\n        {\n          \"board_id\": \"b1\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 1,\n          \"rotated_90\": false\n        },\n        {\n          \"board_id\": \"b2\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 2,\n          \"rotated_90\": false\n        }\n      ],\n      \"operations\": [\n        {\n          \"type\": \"cut_workpiece\",\n          \"workpiece_id\": \"b0\",\n          \"direction\": \"vertical\",\n          \"at\": 400,\n          \"first_id\": \"b0_left\",\n          \"second_id\": \"b0_right\"\n        },\n        {\n          \"type\": \"cut_workpiece\",\n          \"workpiece_id\": \"b1\",\n          \"direction\": \"vertical\",\n          \"at\": 400,\n          \"first_id\": \"b1_left\",\n          \"second_id\": \"b1_right\"\n        },\n        {\n          \"type\": \"cut_workpiece\",\n          \"workpiece_id\": \"b2\",\n          \"direction\": \"vertical\",\n          \"at\": 400,\n          \"first_id\": \"b2_left\",\n          \"second_id\": \"b2_right\"\n        }\n      ]\n    },\n    \"routes\": [\n      {\n        \"workpiece_id\": \"b0_left\",\n        \"route\": {\n          \"kind\": \"cut\",\n          \"direction\": \"horizontal\",\n          \"at\": 300,\n          \"first\": {\n            \"kind\": \"cut\",\n            \"direction\": \"vertical\",\n            \"at\": 150,\n            \"first\": {\n              \"kind\": \"done\"\n            },\n            \"second\": {\n              \"kind\": \"done\"\n            }\n          },\n          \"second\": {\n            \"kind\": \"done\"\n          }\n        }\n      },\n      {\n        \"workpiece_id\": \"b1_left\",\n        \"route\": {\n          \"kind\": \"cut\",\n          \"direction\": \"horizontal\",\n          \"at\": 300,\n          \"first\": {\n            \"kind\": \"cut\",\n            \"direction\": \"vertical\",\n            \"at\": 150,\n            \"first\": {\n              \"kind\": \"done\"\n            },\n            \"second\": {\n              \"kind\": \"done\"\n            }\n          },\n          \"second\": {\n            \"kind\": \"done\"\n          }\n        }\n      },\n      {\n        \"workpiece_id\": \"b2_left\",\n        \"route\": {\n          \"kind\": \"cut\",\n          \"direction\": \"horizontal\",\n          \"at\": 300,\n          \"first\": {\n            \"kind\": \"cut\",\n            \"direction\": \"vertical\",\n            \"at\": 150,\n            \"first\": {\n              \"kind\": \"done\"\n            },\n            \"second\": {\n              \"kind\": \"done\"\n            }\n          },\n          \"second\": {\n            \"kind\": \"done\"\n          }\n        }\n      }\n    ]\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "15 - Programar operaciones industriales",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"schedule-stage14-stack-and-cut\",\n  \"options\": {\n    \"seed\": 14,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"schedule_production\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina veta X\",\n          \"thickness\": 180,\n          \"directional_grain\": true\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"A\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 300,\n          \"quantity\": 4,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"board1000\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 800,\n          \"thickness\": 180,\n          \"quantity\": 5,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"left\": 10,\n            \"right\": 10,\n            \"top\": 10,\n            \"bottom\": 10\n          },\n          \"unit_cost_minor\": 5000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 1500,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 540,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [\n        {\n          \"id\": \"pattern-01\",\n          \"stock_id\": \"board1000\",\n          \"mode\": \"V-H\",\n          \"root\": {\n            \"kind\": \"split\",\n            \"node_id\": \"n-root\",\n            \"direction\": \"vertical\",\n            \"at\": 400,\n            \"first\": {\n              \"kind\": \"split\",\n              \"node_id\": \"n-left\",\n              \"direction\": \"horizontal\",\n              \"at\": 300,\n              \"first\": {\n                \"kind\": \"piece\",\n                \"node_id\": \"a\",\n                \"part_id\": \"A\",\n                \"rotated\": false\n              },\n              \"second\": {\n                \"kind\": \"residual\",\n                \"node_id\": \"r1\",\n                \"reusable\": true\n              }\n            },\n            \"second\": {\n              \"kind\": \"residual\",\n              \"node_id\": \"r2\",\n              \"reusable\": true\n            }\n          }\n        }\n      ],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"plan\": {\n      \"initial_boards\": [\n        {\n          \"board_id\": \"b0\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 0\n        },\n        {\n          \"board_id\": \"b1\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 1\n        }\n      ],\n      \"operations\": [\n        {\n          \"type\": \"finish\",\n          \"workpiece_id\": \"piece_A_1\",\n          \"part_id\": \"A\",\n          \"rotated\": false\n        },\n        {\n          \"type\": \"cut_stack\",\n          \"stack_id\": \"whole\",\n          \"direction\": \"vertical\",\n          \"at\": 400,\n          \"first_stack_id\": \"left\",\n          \"second_stack_id\": \"right\",\n          \"first_member_ids\": [\n            \"b0_left\",\n            \"b1_left\"\n          ],\n          \"second_member_ids\": [\n            \"b0_right\",\n            \"b1_right\"\n          ]\n        },\n        {\n          \"type\": \"rotate_stack\",\n          \"stack_id\": \"right\"\n        },\n        {\n          \"type\": \"stack\",\n          \"stack_id\": \"whole\",\n          \"member_ids\": [\n            \"b0\",\n            \"b1\"\n          ]\n        },\n        {\n          \"type\": \"cut_workpiece\",\n          \"workpiece_id\": \"b0_left\",\n          \"direction\": \"horizontal\",\n          \"at\": 300,\n          \"first_id\": \"piece_A_1\",\n          \"second_id\": \"offcut_A_1\"\n        },\n        {\n          \"type\": \"move_stack\",\n          \"stack_id\": \"right\",\n          \"station\": \"outfeed\"\n        },\n        {\n          \"type\": \"unstack\",\n          \"stack_id\": \"left\"\n        },\n        {\n          \"type\": \"scrap\",\n          \"workpiece_id\": \"offcut_A_1\",\n          \"reusable\": true\n        }\n      ]\n    },\n    \"dependencies\": [\n      {\n        \"before\": 3,\n        \"after\": 1\n      }\n    ],\n    \"schedule_options\": {\n      \"max_search_nodes\": 12000\n    }\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "16 - Optimización global LNS",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"global-example-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 4000\n  },\n  \"operation\": {\n    \"type\": \"optimize_global\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina 18mm\",\n          \"thickness\": 180,\n          \"directional_grain\": false\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"PANEL\",\n          \"material_id\": \"mel18\",\n          \"width\": 1000,\n          \"height\": 600,\n          \"quantity\": 3,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": null,\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"cheap\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 600,\n          \"thickness\": 180,\n          \"quantity\": 2,\n          \"grain_axis\": null,\n          \"trim\": {\n            \"top\": 0,\n            \"right\": 0,\n            \"bottom\": 0,\n            \"left\": 0\n          },\n          \"unit_cost_minor\": 2500\n        },\n        {\n          \"id\": \"expensive\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 600,\n          \"thickness\": 180,\n          \"quantity\": 2,\n          \"grain_axis\": null,\n          \"trim\": {\n            \"top\": 0,\n            \"right\": 0,\n            \"bottom\": 0,\n            \"left\": 0\n          },\n          \"unit_cost_minor\": 5500\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 2000,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 800,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"global_options\": {\n      \"max_boards\": 10,\n      \"restarts\": 2,\n      \"beam_width\": 8,\n      \"max_expansions\": 250,\n      \"max_iterations\": 3,\n      \"neighborhood_boards\": 2,\n      \"operation_weight_minor\": 1\n    }\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "17 - Evaluar costos y sobrantes",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"evaluate-economics\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"evaluate_economics\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina veta X\",\n          \"thickness\": 180,\n          \"directional_grain\": true\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"A\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 300,\n          \"quantity\": 2,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"board1000\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 800,\n          \"thickness\": 180,\n          \"quantity\": 5,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"left\": 10,\n            \"right\": 10,\n            \"top\": 10,\n            \"bottom\": 10\n          },\n          \"unit_cost_minor\": 5000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 1500,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 800,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [\n        {\n          \"id\": \"pattern-01\",\n          \"stock_id\": \"board1000\",\n          \"mode\": \"V-H\",\n          \"root\": {\n            \"kind\": \"split\",\n            \"node_id\": \"n-root\",\n            \"direction\": \"vertical\",\n            \"at\": 400,\n            \"first\": {\n              \"kind\": \"split\",\n              \"node_id\": \"n-left\",\n              \"direction\": \"horizontal\",\n              \"at\": 300,\n              \"first\": {\n                \"kind\": \"piece\",\n                \"node_id\": \"a\",\n                \"part_id\": \"A\",\n                \"rotated\": false\n              },\n              \"second\": {\n                \"kind\": \"residual\",\n                \"node_id\": \"r1\",\n                \"reusable\": true\n              }\n            },\n            \"second\": {\n              \"kind\": \"residual\",\n              \"node_id\": \"r2\",\n              \"reusable\": true\n            }\n          }\n        }\n      ],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"layout\": {\n      \"boards\": [\n        {\n          \"board_id\": \"board-1\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 0,\n          \"pattern_id\": \"pattern-01\",\n          \"board_rotated_90\": false\n        },\n        {\n          \"board_id\": \"board-2\",\n          \"stock_id\": \"board1000\",\n          \"stock_unit_index\": 1,\n          \"pattern_id\": \"pattern-01\",\n          \"board_rotated_90\": false\n        }\n      ]\n    },\n    \"economic_options\": {\n      \"objective\": \"minimum_total_cost\",\n      \"rates\": {\n        \"saw_pass_minor\": 100,\n        \"stack_setup_minor\": 40,\n        \"stack_release_minor\": 30,\n        \"board_handling_minor\": 15,\n        \"rotation_minor\": 15,\n        \"movement_minor\": 20,\n        \"job_setup_minor\": 100\n      },\n      \"recovery\": {\n        \"min_width\": 300,\n        \"min_height\": 300,\n        \"min_area_sq_units\": 90000,\n        \"recovery_rate_bps\": 2500,\n        \"max_board_credit_bps\": 7500\n      },\n      \"additional_handling\": {\n        \"rotations\": 0,\n        \"movements\": 0\n      },\n      \"compare_full_board_stacking\": true,\n      \"allow_partial_order\": false\n    }\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "18 - Comparar soluciones económicas",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"economic-compare\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"compare_economic_layouts\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina veta X\",\n          \"thickness\": 180,\n          \"directional_grain\": true\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"A\",\n          \"material_id\": \"mel18\",\n          \"width\": 400,\n          \"height\": 300,\n          \"quantity\": 2,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"board1000\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 800,\n          \"thickness\": 180,\n          \"quantity\": 5,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"left\": 10,\n            \"right\": 10,\n            \"top\": 10,\n            \"bottom\": 10\n          },\n          \"unit_cost_minor\": 5000\n        },\n        {\n          \"id\": \"premium\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 800,\n          \"thickness\": 180,\n          \"quantity\": 5,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"left\": 10,\n            \"right\": 10,\n            \"top\": 10,\n            \"bottom\": 10\n          },\n          \"unit_cost_minor\": 10000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 1500,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 800,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [\n        {\n          \"id\": \"pattern-01\",\n          \"stock_id\": \"board1000\",\n          \"mode\": \"V-H\",\n          \"root\": {\n            \"kind\": \"split\",\n            \"node_id\": \"n-root\",\n            \"direction\": \"vertical\",\n            \"at\": 400,\n            \"first\": {\n              \"kind\": \"split\",\n              \"node_id\": \"n-left\",\n              \"direction\": \"horizontal\",\n              \"at\": 300,\n              \"first\": {\n                \"kind\": \"piece\",\n                \"node_id\": \"a\",\n                \"part_id\": \"A\",\n                \"rotated\": false\n              },\n              \"second\": {\n                \"kind\": \"residual\",\n                \"node_id\": \"r1\",\n                \"reusable\": true\n              }\n            },\n            \"second\": {\n              \"kind\": \"residual\",\n              \"node_id\": \"r2\",\n              \"reusable\": true\n            }\n          }\n        },\n        {\n          \"id\": \"pattern-premium\",\n          \"stock_id\": \"premium\",\n          \"mode\": \"V-H\",\n          \"root\": {\n            \"kind\": \"split\",\n            \"node_id\": \"n-root\",\n            \"direction\": \"vertical\",\n            \"at\": 400,\n            \"first\": {\n              \"kind\": \"split\",\n              \"node_id\": \"n-left\",\n              \"direction\": \"horizontal\",\n              \"at\": 300,\n              \"first\": {\n                \"kind\": \"piece\",\n                \"node_id\": \"a\",\n                \"part_id\": \"A\",\n                \"rotated\": false\n              },\n              \"second\": {\n                \"kind\": \"residual\",\n                \"node_id\": \"r1\",\n                \"reusable\": true\n              }\n            },\n            \"second\": {\n              \"kind\": \"residual\",\n              \"node_id\": \"r2\",\n              \"reusable\": true\n            }\n          }\n        }\n      ],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"economic_options\": {\n      \"objective\": \"minimum_total_cost\",\n      \"rates\": {\n        \"saw_pass_minor\": 100,\n        \"stack_setup_minor\": 40,\n        \"stack_release_minor\": 30,\n        \"board_handling_minor\": 15,\n        \"rotation_minor\": 15,\n        \"movement_minor\": 20,\n        \"job_setup_minor\": 100\n      },\n      \"recovery\": {\n        \"min_width\": 300,\n        \"min_height\": 300,\n        \"min_area_sq_units\": 90000,\n        \"recovery_rate_bps\": 2500,\n        \"max_board_credit_bps\": 7500\n      },\n      \"additional_handling\": {\n        \"rotations\": 0,\n        \"movements\": 0\n      },\n      \"compare_full_board_stacking\": true,\n      \"allow_partial_order\": false\n    },\n    \"layouts\": [\n      {\n        \"boards\": [\n          {\n            \"board_id\": \"board-1\",\n            \"stock_id\": \"board1000\",\n            \"stock_unit_index\": 0,\n            \"pattern_id\": \"pattern-01\",\n            \"board_rotated_90\": false\n          },\n          {\n            \"board_id\": \"board-2\",\n            \"stock_id\": \"premium\",\n            \"stock_unit_index\": 1,\n            \"pattern_id\": \"pattern-premium\",\n            \"board_rotated_90\": false\n          }\n        ]\n      },\n      {\n        \"boards\": [\n          {\n            \"board_id\": \"board-1\",\n            \"stock_id\": \"board1000\",\n            \"stock_unit_index\": 0,\n            \"pattern_id\": \"pattern-01\",\n            \"board_rotated_90\": false\n          },\n          {\n            \"board_id\": \"board-2\",\n            \"stock_id\": \"board1000\",\n            \"stock_unit_index\": 1,\n            \"pattern_id\": \"pattern-01\",\n            \"board_rotated_90\": false\n          }\n        ]\n      }\n    ]\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "99 - Validar sin ejecutar",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/jobs/validate",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"multi-board-example-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"generate_multi_board\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"mel18\",\n          \"name\": \"Melamina 18mm\",\n          \"thickness\": 180,\n          \"directional_grain\": false\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"PANEL\",\n          \"material_id\": \"mel18\",\n          \"width\": 1000,\n          \"height\": 600,\n          \"quantity\": 3,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": null,\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"cheap\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 600,\n          \"thickness\": 180,\n          \"quantity\": 2,\n          \"grain_axis\": null,\n          \"trim\": {\n            \"top\": 0,\n            \"right\": 0,\n            \"bottom\": 0,\n            \"left\": 0\n          },\n          \"unit_cost_minor\": 2500\n        },\n        {\n          \"id\": \"expensive\",\n          \"material_id\": \"mel18\",\n          \"kind\": \"full_board\",\n          \"width\": 1000,\n          \"height\": 600,\n          \"thickness\": 180,\n          \"quantity\": 2,\n          \"grain_axis\": null,\n          \"trim\": {\n            \"top\": 0,\n            \"right\": 0,\n            \"bottom\": 0,\n            \"left\": 0\n          },\n          \"unit_cost_minor\": 5500\n        }\n      ],\n      \"machine\": {\n        \"id\": \"saw\",\n        \"kerf\": 10,\n        \"max_cut_length\": 2000,\n        \"min_piece_width\": 50,\n        \"min_piece_height\": 50,\n        \"min_strip_width\": 50,\n        \"min_clamp_width\": 50,\n        \"max_stack_height\": 800,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"max_boards\": 10,\n    \"restarts\": 3,\n    \"beam_width\": 8,\n    \"max_expansions\": 250\n  }\n}\n",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "18 - Pedido real melamina 2440 x 1830 (multitablero)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"postman-paneles-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"generate_multi_board\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"MEL-18\",\n          \"name\": \"Melamina blanca 18 mm\",\n          \"thickness\": 180,\n          \"directional_grain\": false\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"LATERAL\",\n          \"material_id\": \"MEL-18\",\n          \"width\": 7200,\n          \"height\": 5000,\n          \"quantity\": 4,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"REPISA\",\n          \"material_id\": \"MEL-18\",\n          \"width\": 8000,\n          \"height\": 3500,\n          \"quantity\": 6,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"FONDO\",\n          \"material_id\": \"MEL-18\",\n          \"width\": 10000,\n          \"height\": 6000,\n          \"quantity\": 2,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": null,\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"STOCK-2440x1830\",\n          \"material_id\": \"MEL-18\",\n          \"kind\": \"full_board\",\n          \"width\": 24400,\n          \"height\": 18300,\n          \"thickness\": 180,\n          \"quantity\": 8,\n          \"grain_axis\": null,\n          \"trim\": {\n            \"top\": 100,\n            \"right\": 100,\n            \"bottom\": 100,\n            \"left\": 100\n          },\n          \"unit_cost_minor\": 18500\n        }\n      ],\n      \"machine\": {\n        \"id\": \"SECCIONADORA-01\",\n        \"kerf\": 32,\n        \"max_cut_length\": 30000,\n        \"min_piece_width\": 500,\n        \"min_piece_height\": 500,\n        \"min_strip_width\": 500,\n        \"min_clamp_width\": 500,\n        \"max_stack_height\": 720,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"max_boards\": 8,\n    \"restarts\": 2,\n    \"beam_width\": 6,\n    \"max_expansions\": 180\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "18 - Generar planos y apilados de tableros completos",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/jobs",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"postman-apilados-001\",\n  \"options\": {\n    \"seed\": 2026,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"generate_stacked_multi_board\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"MEL-18\",\n          \"name\": \"Melamina blanca 18 mm\",\n          \"thickness\": 180,\n          \"directional_grain\": false\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"LATERAL\",\n          \"material_id\": \"MEL-18\",\n          \"width\": 7200,\n          \"height\": 5000,\n          \"quantity\": 4,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"REPISA\",\n          \"material_id\": \"MEL-18\",\n          \"width\": 8000,\n          \"height\": 3500,\n          \"quantity\": 6,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"FONDO\",\n          \"material_id\": \"MEL-18\",\n          \"width\": 10000,\n          \"height\": 6000,\n          \"quantity\": 2,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": null,\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"STOCK-2440x1830\",\n          \"material_id\": \"MEL-18\",\n          \"kind\": \"full_board\",\n          \"width\": 24400,\n          \"height\": 18300,\n          \"thickness\": 180,\n          \"quantity\": 8,\n          \"grain_axis\": null,\n          \"trim\": {\n            \"top\": 100,\n            \"right\": 100,\n            \"bottom\": 100,\n            \"left\": 100\n          },\n          \"unit_cost_minor\": 18500\n        }\n      ],\n      \"machine\": {\n        \"id\": \"SECCIONADORA-01\",\n        \"kerf\": 32,\n        \"max_cut_length\": 30000,\n        \"min_piece_width\": 500,\n        \"min_piece_height\": 500,\n        \"min_strip_width\": 500,\n        \"min_clamp_width\": 500,\n        \"max_stack_height\": 720,\n        \"max_stack_members\": 4,\n        \"allow_board_rotation\": true,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      },\n      \"patterns\": [],\n      \"workpieces\": [],\n      \"stacks\": []\n    },\n    \"max_boards\": 8,\n    \"restarts\": 2,\n    \"beam_width\": 6,\n    \"max_expansions\": 180\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "19 - Generar planos de corte (formato planos)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{apiKey}}",
+            "disabled": true
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/cut-plans",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"schema_version\": \"1.0\",\n  \"job_id\": \"planos-rovere-4408\",\n  \"options\": {\n    \"seed\": 42,\n    \"max_runtime_ms\": 30000\n  },\n  \"operation\": {\n    \"type\": \"generate_cut_plans\",\n    \"model\": {\n      \"materials\": [\n        {\n          \"id\": \"rovere18\",\n          \"name\": \"BNOVOPN0118//Novopan Melamina Rovere 2150x2440 18mm\",\n          \"thickness\": 180,\n          \"directional_grain\": true\n        }\n      ],\n      \"parts\": [\n        {\n          \"id\": \"item-1\",\n          \"material_id\": \"rovere18\",\n          \"width\": 13100,\n          \"height\": 8100,\n          \"quantity\": 30,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        },\n        {\n          \"id\": \"item-2\",\n          \"material_id\": \"rovere18\",\n          \"width\": 7500,\n          \"height\": 8100,\n          \"quantity\": 30,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        },\n        {\n          \"id\": \"item-3\",\n          \"material_id\": \"rovere18\",\n          \"width\": 12630,\n          \"height\": 3000,\n          \"quantity\": 15,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"item-4\",\n          \"material_id\": \"rovere18\",\n          \"width\": 15000,\n          \"height\": 10000,\n          \"quantity\": 30,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        },\n        {\n          \"id\": \"item-5\",\n          \"material_id\": \"rovere18\",\n          \"width\": 15000,\n          \"height\": 1500,\n          \"quantity\": 30,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        },\n        {\n          \"id\": \"item-6\",\n          \"material_id\": \"rovere18\",\n          \"width\": 10000,\n          \"height\": 1500,\n          \"quantity\": 15,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        },\n        {\n          \"id\": \"item-7\",\n          \"material_id\": \"rovere18\",\n          \"width\": 5000,\n          \"height\": 2000,\n          \"quantity\": 15,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"item-8\",\n          \"material_id\": \"rovere18\",\n          \"width\": 5000,\n          \"height\": 1200,\n          \"quantity\": 30,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"item-9\",\n          \"material_id\": \"rovere18\",\n          \"width\": 4500,\n          \"height\": 1200,\n          \"quantity\": 60,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"item-10\",\n          \"material_id\": \"rovere18\",\n          \"width\": 5590,\n          \"height\": 1200,\n          \"quantity\": 30,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"item-11\",\n          \"material_id\": \"rovere18\",\n          \"width\": 5590,\n          \"height\": 1000,\n          \"quantity\": 30,\n          \"allow_rotate_90\": true,\n          \"grain_axis\": null,\n          \"priority\": 0\n        },\n        {\n          \"id\": \"item-12\",\n          \"material_id\": \"rovere18\",\n          \"width\": 1400,\n          \"height\": 6210,\n          \"quantity\": 30,\n          \"allow_rotate_90\": false,\n          \"grain_axis\": \"x\",\n          \"priority\": 0\n        }\n      ],\n      \"stocks\": [\n        {\n          \"id\": \"rovere-2440x2140\",\n          \"material_id\": \"rovere18\",\n          \"kind\": \"full_board\",\n          \"width\": 24400,\n          \"height\": 21400,\n          \"thickness\": 180,\n          \"quantity\": 60,\n          \"grain_axis\": \"x\",\n          \"trim\": {\n            \"top\": 50,\n            \"right\": 50,\n            \"bottom\": 50,\n            \"left\": 50\n          },\n          \"unit_cost_minor\": 25000\n        }\n      ],\n      \"machine\": {\n        \"id\": \"seccionadora\",\n        \"kerf\": 44,\n        \"max_cut_length\": 24400,\n        \"min_piece_width\": 500,\n        \"min_piece_height\": 500,\n        \"min_strip_width\": 500,\n        \"min_clamp_width\": 500,\n        \"max_stack_height\": 600,\n        \"max_stack_members\": 3,\n        \"allow_board_rotation\": false,\n        \"allow_recuts\": true,\n        \"allowed_patterns\": [\n          \"V-H\",\n          \"H-V\",\n          \"V-H-V\",\n          \"H-V-H\"\n        ],\n        \"stacking\": {\n          \"full_boards\": true,\n          \"strips\": true,\n          \"restacking\": true\n        }\n      }\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "Devuelve el documento de planos (records → boards → cuts/parts). Ábrelo en {{baseUrl}}/viewer con «Pegar JSON»."
+      }
+    }
+  ]
+}

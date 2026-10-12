@@ -1,0 +1,103 @@
+{
+  "schema_version": "1.0",
+  "job_id": "postman-paneles-001",
+  "options": {
+    "seed": 2026,
+    "max_runtime_ms": 30000
+  },
+  "operation": {
+    "type": "generate_multi_board",
+    "model": {
+      "materials": [
+        {
+          "id": "MEL-18",
+          "name": "Melamina blanca 18 mm",
+          "thickness": 180,
+          "directional_grain": false
+        }
+      ],
+      "parts": [
+        {
+          "id": "LATERAL",
+          "material_id": "MEL-18",
+          "width": 7200,
+          "height": 5000,
+          "quantity": 4,
+          "allow_rotate_90": true,
+          "grain_axis": null,
+          "priority": 0
+        },
+        {
+          "id": "REPISA",
+          "material_id": "MEL-18",
+          "width": 8000,
+          "height": 3500,
+          "quantity": 6,
+          "allow_rotate_90": true,
+          "grain_axis": null,
+          "priority": 0
+        },
+        {
+          "id": "FONDO",
+          "material_id": "MEL-18",
+          "width": 10000,
+          "height": 6000,
+          "quantity": 2,
+          "allow_rotate_90": true,
+          "grain_axis": null,
+          "priority": 0
+        }
+      ],
+      "stocks": [
+        {
+          "id": "STOCK-2440x1830",
+          "material_id": "MEL-18",
+          "kind": "full_board",
+          "width": 24400,
+          "height": 18300,
+          "thickness": 180,
+          "quantity": 8,
+          "grain_axis": null,
+          "trim": {
+            "top": 100,
+            "right": 100,
+            "bottom": 100,
+            "left": 100
+          },
+          "unit_cost_minor": 18500
+        }
+      ],
+      "machine": {
+        "id": "SECCIONADORA-01",
+        "kerf": 32,
+        "max_cut_length": 30000,
+        "min_piece_width": 500,
+        "min_piece_height": 500,
+        "min_strip_width": 500,
+        "min_clamp_width": 500,
+        "max_stack_height": 720,
+        "max_stack_members": 4,
+        "allow_board_rotation": true,
+        "allow_recuts": true,
+        "allowed_patterns": [
+          "V-H",
+          "H-V",
+          "V-H-V",
+          "H-V-H"
+        ],
+        "stacking": {
+          "full_boards": true,
+          "strips": true,
+          "restacking": true
+        }
+      },
+      "patterns": [],
+      "workpieces": [],
+      "stacks": []
+    },
+    "max_boards": 8,
+    "restarts": 2,
+    "beam_width": 6,
+    "max_expansions": 180
+  }
+}

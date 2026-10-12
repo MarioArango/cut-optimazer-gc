@@ -1,0 +1,79 @@
+name: Rust CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Autoformat generated Rust sources and verify
+        run: |
+          cargo fmt --all
+          cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Unit and HTTP API integration tests (also checks JSON fixtures)
+        run: cargo test --workspace
+      - name: Compile release binary
+        run: cargo build --release --workspace
+      - name: CLI example
+        run: |
+          cargo run --quiet -p optimizer-cli -- run --input examples/system-check.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/validate-model.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/validate-strip-stack.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/preprocess-model.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/preprocess-ineligible-piece.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/geometry-vertical-split.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/geometry-horizontal-split.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/geometry-trim.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/guillotine-vh.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/guillotine-hv.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/guillotine-vhv.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/guillotine-hvh.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/layout-valid.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/layout-invalid-missing.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/layout-invalid-duplicate-stock.json
+
+          cargo run --quiet -p optimizer-cli -- run --input examples/generate-two-stage.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/generate-two-stage-hv.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/generate-two-stage-no-fit.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/generate-three-stage-vhv.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/generate-three-stage-hvh.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/generate-three-stage-no-fit.json
+
+          cargo run --quiet -p optimizer-cli -- run --input examples/generate-multi-board.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/generate-multi-board-partial.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/generate-multi-board-mixed.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/generate-multi-board-three-stage.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/plan-full-board-stacks.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/generate-stacked-multi-board.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/plan-full-board-stacks-unprofitable.json
+
+          cargo run --quiet -p optimizer-cli -- run --input examples/plan-strip-stacks.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/plan-strip-stacks-existing.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/plan-strip-stacks-disabled.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/plan-dynamic-stacks.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/plan-dynamic-divergent.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/plan-dynamic-repackage.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/plan-dynamic-disabled.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/plan-dynamic-costly.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/optimize-global.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/optimize-global-partial.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/optimize-global-no-stacking.json
+
+          cargo run --quiet -p optimizer-cli -- run --input examples/evaluate-economics.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/evaluate-economics-no-stacking.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/evaluate-economics-partial.json
+          cargo run --quiet -p optimizer-cli -- run --input examples/compare-economic-layouts.json
+
+      - name: Stage 18 benchmark smoke (not a performance claim)
+        run: cargo run --release -p optimizer-bench -- --fixture examples/system-check.json --iterations 1 --warmup 0
+      - name: Validate real industrial request through CLI
+        run: cargo run -p optimizer-cli -- run --input examples/postman-industrial-real.json

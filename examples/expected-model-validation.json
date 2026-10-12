@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "job_id": "modelo-melamina-001",
+  "engine_version": "0.18.0",
+  "status": "completed",
+  "seed": 2026,
+  "output": {
+    "type": "model_validation",
+    "summary": {
+      "material_types": 1,
+      "part_types": 2,
+      "requested_pieces": 12,
+      "stock_types": 1,
+      "available_boards": 10,
+      "pattern_templates": 1,
+      "tracked_workpieces": 2,
+      "stacks": 1,
+      "stacked_workpieces": 2,
+      "geometry_validated": false,
+      "production_validated": false
+    }
+  }
+}

@@ -250,10 +250,14 @@ table.grid label.chk { display: inline-flex; gap: 6px; align-items: center; whit
     <label class="f">Saneado por lado (mm)<input id="c-trim" inputmode="decimal"></label>
     <label class="f">Pieza / franja mínima (mm)<input id="c-min" inputmode="decimal"></label>
     <label class="f">Largo máximo de corte (mm) <small>vacío = largo del tablero</small><input id="c-maxcut" inputmode="decimal"></label>
-    <fieldset><legend>Patrones de corte</legend>
-      <label><input type="checkbox" id="c-two"> 2 niveles (V-H, H-V)</label>
-      <label><input type="checkbox" id="c-three"> 3 niveles (V-H-V, H-V-H)</label>
-    </fieldset>
+    <label class="f">Niveles máximos de corte <small>3 = como hasta ahora; 4–6 aprovechan mejor el tablero, nunca dan un resultado peor que 3 y usan todo el tiempo máximo (hasta 1,5×)</small>
+      <select id="c-levels">
+        <option value="2">2 niveles</option>
+        <option value="3">3 niveles (por defecto)</option>
+        <option value="4">4 niveles</option>
+        <option value="5">5 niveles</option>
+        <option value="6">6 niveles</option>
+      </select></label>
     <fieldset><legend>Apilado (libros)</legend>
       <label><input type="checkbox" id="c-stack"> Apilar tableros con el mismo patrón</label>
       <label class="f">Máx. tableros por libro<input id="c-books" inputmode="numeric"></label>
@@ -479,6 +483,7 @@ function buildBoard(b, i, rec) {
   };
   for (const p of b.parts || []) add(p, false);
   for (const r of b.waste_part || []) add(r, true);
+  const hasICut = JSON.stringify(b.cuts || []).includes('"i_cut"');
   const cuts = []; // flat list in sequence order
   let cutsCount = 0, cutLen = 0;
   function walk(list, level, region, parent) {
@@ -489,7 +494,9 @@ function buildBoard(b, i, rec) {
     for (const c of list) {
       const at = vertical ? num(c.x1) : num(c.y1);
       const r = vertical ? { x1: prev, y1: region.y1, x2: at, y2: region.y2 } : { x1: region.x1, y1: prev, x2: region.x2, y2: at };
-      const real = c.type !== "retal" && !c.edge;
+      // A saw pass carries i_cut (it may take out a remnant between pieces);
+      // files without i_cut fall back to "not a closing remnant or edge".
+      const real = hasICut ? c.i_cut !== undefined : c.type !== "retal" && !c.edge;
       const node = { raw: c, level, vertical, region: r, parent, real, seq: real ? ++cutsCount : null, id: num(c.id_piece), children: [] };
       if (real) cutLen += vertical ? (region.y2 - region.y1 - kerf) : (region.x2 - region.x1 - kerf);
       cuts.push(node);
@@ -930,7 +937,11 @@ $("opt-ok").onclick = async () => {
 // =====================================================================
 // Project editor: materials + pieces + settings → generate_cut_plans
 // =====================================================================
-const DEFAULT_CONFIG = { kerf: 4.4, trim: 5, min: 50, maxcut: "", two: true, three: true, stack: true, books: 3, rotate: false, search: "normal", time: 30, seed: 42 };
+const DEFAULT_CONFIG = { kerf: 4.4, trim: 5, min: 50, maxcut: "", levels: 3, stack: true, books: 3, rotate: false, search: "normal", time: 30, seed: 42 };
+// Every pattern of 2..6 levels, both first directions; choosing N allows all up to N.
+const PATTERNS = [2, 3, 4, 5, 6].map((n) => ({ n, names: ["V", "H"].map((first) =>
+  Array.from({ length: n }, (_, i) => (i % 2 === 0) === (first === "V") ? "V" : "H").join("-")) }));
+const maxLevels = (c) => Math.min(6, Math.max(2, Math.round(parseNum(c.levels) || 3)));
 const SEARCH = {
   fast:   { restarts: 2, beam_width: 8,  max_expansions: 1500,  max_iterations: 8,  neighborhood_boards: 2 },
   normal: { restarts: 8, beam_width: 16, max_expansions: 4000,  max_iterations: 64, neighborhood_boards: 8 },
@@ -954,6 +965,9 @@ function loadDraft() {
     if (Array.isArray(saved.materials) && Array.isArray(saved.parts)) {
       Object.assign(project, saved, { config: { ...DEFAULT_CONFIG, ...(saved.config || {}) } });
       project.materials.forEach((m) => { if (m.price === undefined) m.price = 250; });
+      const cfg = project.config;
+      if (saved.config && saved.config.levels === undefined) cfg.levels = saved.config.three === false ? 2 : 3;
+      delete cfg.two; delete cfg.three;
     }
   } catch (e) { /* ignore a broken draft */ }
 }
@@ -1143,7 +1157,6 @@ function validateProject() {
     }
   }
   if (!(kerf > 0)) errors.push("Configuración: ancho de sierra inválido.");
-  if (!c.two && !c.three) errors.push("Configuración: elige al menos un patrón de corte.");
   $("part-msgs").innerHTML = warns.map((w) => `<p class="warn" style="margin:0">${esc(w)}</p>`).join("");
   updateSummary();
   return { errors, warns };
@@ -1196,7 +1209,7 @@ function buildRequest() {
   const longest = Math.max(...stocks.map((s) => Math.max(s.width, s.height)));
   const maxcut = parseNum(c.maxcut) > 0 ? tenths(parseNum(c.maxcut)) : longest;
   const thickest = Math.max(...materials.map((m) => m.thickness));
-  const patterns = [...(c.two ? ["V-H", "H-V"] : []), ...(c.three ? ["V-H-V", "H-V-H"] : [])];
+  const patterns = PATTERNS.filter((p) => p.n <= maxLevels(c)).flatMap((p) => p.names);
   const totalBoards = stocks.reduce((s, x) => s + x.quantity, 0);
   return {
     schema_version: "1.0",
@@ -1237,7 +1250,7 @@ function importRequest(json) {
     kerf: mc.kerf !== undefined ? mm(mc.kerf) : DEFAULT_CONFIG.kerf,
     trim: st0.trim ? mm(st0.trim.left) : DEFAULT_CONFIG.trim,
     min: mc.min_piece_width !== undefined ? mm(mc.min_piece_width) : DEFAULT_CONFIG.min,
-    maxcut: "", two: pats.length ? pats.some((x) => x.length === 3) : true, three: pats.length ? pats.some((x) => x.length === 5) : true,
+    maxcut: "", levels: pats.length ? Math.max(...pats.map((x) => x.split("-").length)) : 3,
     stack: mc.stacking ? !!mc.stacking.full_boards : true, books: mc.max_stack_members ?? 3, rotate: !!mc.allow_board_rotation, search,
     time: req.options && req.options.max_runtime_ms ? Math.round(req.options.max_runtime_ms / 1000) : 30,
     seed: req.options && req.options.seed !== undefined ? req.options.seed : 42 };
@@ -1269,8 +1282,8 @@ function showRunMsgs(errors, info) {
 }
 
 // ---------- settings dialog ----------
-const CFG_INPUTS = { kerf: "c-kerf", trim: "c-trim", min: "c-min", maxcut: "c-maxcut", books: "c-books", time: "c-time", seed: "c-seed", search: "c-search" };
-const CFG_CHECKS = { two: "c-two", three: "c-three", stack: "c-stack", rotate: "c-rotate" };
+const CFG_INPUTS = { kerf: "c-kerf", trim: "c-trim", min: "c-min", maxcut: "c-maxcut", levels: "c-levels", books: "c-books", time: "c-time", seed: "c-seed", search: "c-search" };
+const CFG_CHECKS = { stack: "c-stack", rotate: "c-rotate" };
 function fillConfig(c) {
   for (const [k, id] of Object.entries(CFG_INPUTS)) $(id).value = c[k] ?? "";
   for (const [k, id] of Object.entries(CFG_CHECKS)) $(id).checked = !!c[k];
@@ -1290,7 +1303,6 @@ $("cfg-ok").onclick = () => {
   if (!(parseNum(c.books) >= 1)) bad.push("tableros por libro");
   if (!(parseNum(c.time) >= 1 && parseNum(c.time) <= 120)) bad.push("tiempo (1–120 s)");
   if (!(parseNum(c.seed) >= 0)) bad.push("semilla");
-  if (!c.two && !c.three) bad.push("al menos un patrón");
   if (bad.length) { $("cfg-err").textContent = "Revisa: " + bad.join(", "); return; }
   project.config = c; saveDraft(); validateProject(); $("dlg-config").close();
 };

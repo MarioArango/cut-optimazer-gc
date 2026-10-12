@@ -18,7 +18,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 
-const MAX_TREE_DEPTH: usize = 128;
+/// Binary-tree depth: a level with n parallel cuts adds n, so six levels of
+/// dense cuts need more than the original 128.
+const MAX_TREE_DEPTH: usize = 512;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -131,13 +133,7 @@ pub struct EvaluatedPattern {
 }
 
 fn direction_sequence(mode: StagePattern) -> &'static [CutDirection] {
-    use CutDirection::{Horizontal as H, Vertical as V};
-    match mode {
-        StagePattern::VH => &[V, H],
-        StagePattern::HV => &[H, V],
-        StagePattern::VHV => &[V, H, V],
-        StagePattern::HVH => &[H, V, H],
-    }
+    mode.directions()
 }
 fn rotated_axis(axis: Option<Axis>, rotate: bool) -> Option<Axis> {
     if !rotate { return axis; }
@@ -173,7 +169,7 @@ impl EvaluationContext<'_> {
         depth: usize,
     ) -> Result<EvaluatedNode, TreeError> {
         if depth > MAX_TREE_DEPTH {
-            return Err(TreeError::new(path, "tree_depth_exceeded", "tree has more than 128 levels"));
+            return Err(TreeError::new(path, "tree_depth_exceeded", "tree is more than 512 nodes deep"));
         }
         match node {
             PatternNode::Split { node_id, direction, at, first, second } => {

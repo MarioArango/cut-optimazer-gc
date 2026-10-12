@@ -31,7 +31,7 @@ use crate::full_board_stacking::FullBoardStackPlan;
 use crate::geometry::Rect;
 use crate::global_optimizer::{optimize_global, GlobalError, GlobalSearchOptions};
 use crate::guillotine::EvaluatedNode;
-use crate::model::{Axis, CutDirection, CuttingJobModel, Part, Unit};
+use crate::model::{Axis, CutDirection, CuttingJobModel, Part, StagePattern, Unit};
 use crate::multi_board::{AllocatedBoard, MultiBoardResult};
 
 /// Remnant ids start here on every board, as in the reference format.
@@ -534,10 +534,34 @@ pub fn default_cut_plan_search() -> GlobalSearchOptions {
 }
 
 /// Run the global optimiser and export its best layout as cutting plans.
+///
+/// With patterns of 4+ levels allowed, the order is first solved exactly as a
+/// 2-3 level job would be (same patterns, seed and time budget), then with
+/// every allowed pattern in the remaining time (at least half the budget,
+/// so the whole job takes at most 1.5× `max_runtime_ms`). The better layout
+/// is kept: allowing more levels never gives a worse plan than 3 levels.
 pub fn generate_cut_plans(
     model: &CuttingJobModel, seed: u64, max_runtime_ms: u64, options: GlobalSearchOptions,
 ) -> Result<Value, GlobalError> {
     let started = Instant::now();
-    let result = optimize_global(model, seed, max_runtime_ms, options)?;
-    Ok(export_cut_plans(model, &result.best, Some(&result.best_stacks), started.elapsed().as_millis()))
+    let shallow: Vec<StagePattern> = model.machine.allowed_patterns.iter().copied().filter(|m| m.levels() <= 3).collect();
+    let deep = model.machine.allowed_patterns.iter().any(|m| m.levels() >= 4);
+    if !deep || shallow.is_empty() || max_runtime_ms < 400 {
+        let result = optimize_global(model, seed, max_runtime_ms, options)?;
+        return Ok(export_cut_plans(model, &result.best, Some(&result.best_stacks), started.elapsed().as_millis()));
+    }
+    let mut shallow_model = model.clone();
+    shallow_model.machine.allowed_patterns = shallow;
+    let guard = optimize_global(&shallow_model, seed, max_runtime_ms, options)?;
+    let used = started.elapsed().as_millis() as u64;
+    let full = optimize_global(model, seed, max_runtime_ms.saturating_sub(used).max(max_runtime_ms / 2), options)?;
+    let winner = if layout_key(&guard.best) < layout_key(&full.best) { guard } else { full };
+    Ok(export_cut_plans(model, &winner.best, Some(&winner.best_stacks), started.elapsed().as_millis()))
+}
+
+/// Lower is better: unplaced pieces, then stock cost, then boards.
+fn layout_key(layout: &MultiBoardResult) -> (u64, u128, usize) {
+    let unplaced = layout.remaining_part_counts.values().map(|&n| u64::from(n)).sum();
+    let cost = layout.stock_cost_minor.parse().unwrap_or(u128::MAX);
+    (unplaced, cost, layout.boards.len())
 }

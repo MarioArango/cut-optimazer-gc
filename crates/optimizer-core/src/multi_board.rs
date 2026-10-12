@@ -9,6 +9,7 @@
 use crate::guillotine::{EvaluatedPattern, TreeError};
 use crate::layout_validation::{validate_layout, BoardAssignment, LayoutPlan, LayoutValidationReport};
 use crate::model::{validate_model, CuttingJobModel, CuttingPattern, ModelIssue, StagePattern};
+use crate::deep_stage::{generate_deep_stage_weighted, DeepStageError, UNIT_VALUE};
 use crate::three_stage::{generate_three_stage, valid_search_settings, ThreeStageError};
 use crate::two_stage::{generate_two_stage, GeneratorError};
 use serde::{Deserialize, Serialize};
@@ -19,6 +20,8 @@ use std::time::Instant;
 
 const MAX_BOARD_LIMIT: usize = 512;
 const MAX_RESTARTS: usize = 8;
+/// Value-corrected passes per requested restart (4+ level patterns only).
+const VALUE_PASSES_PER_RESTART: usize = 2;
 const MAX_STOCK_VARIANTS: usize = 128;
 
 pub fn default_max_boards() -> usize { 128 }
@@ -38,6 +41,7 @@ pub enum MultiBoardError {
     TooManyStockTypes(usize),
     TwoStage(GeneratorError),
     ThreeStage(ThreeStageError),
+    DeepStage(DeepStageError),
     InvalidGeneratedPattern(TreeError),
     InternalValidationFailed(Vec<String>),
 }
@@ -49,6 +53,7 @@ impl fmt::Display for MultiBoardError {
             Self::TooManyStockTypes(n) => write!(f, "multi-board search supports at most {MAX_STOCK_VARIANTS} stock types (received {n})"),
             Self::TwoStage(e) => write!(f, "two-stage search: {e}"),
             Self::ThreeStage(e) => write!(f, "three-stage search: {e}"),
+            Self::DeepStage(e) => write!(f, "multi-level search: {e}"),
             Self::InvalidGeneratedPattern(e) => write!(f, "invalid generated pattern: {e}"),
             Self::InternalValidationFailed(codes) => write!(f, "generated layout failed independent validation: {}", codes.join(", ")),
         }
@@ -61,6 +66,8 @@ impl std::error::Error for MultiBoardError {}
 pub enum PatternSource {
     TwoStage,
     ThreeStage,
+    /// 4..=6 cutting levels (`deep_stage`).
+    DeepStage,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -110,6 +117,8 @@ struct BoardOption {
     evaluated: EvaluatedPattern,
     placed_count: u64,
     placed_area: u128,
+    /// Placed area weighted by part values (value-corrected passes only).
+    placed_value: u128,
     stock_cost: u64,
     usable_area: u128,
 }
@@ -200,19 +209,23 @@ fn candidate_from(
     BoardOption {
         source, stock_index, board_rotated_90: rotated, mode,
         utilization_basis_points, pattern, evaluated, placed_count,
-        placed_area, stock_cost: stock.unit_cost_minor, usable_area,
+        placed_area, placed_value: placed_area * u128::from(UNIT_VALUE), stock_cost: stock.unit_cost_minor, usable_area,
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn generate_options(
     model: &CuttingJobModel, pending: &CuttingJobModel,
     reserved: &[u32], seed: u64, beam_width: usize, max_expansions: usize,
-    deadline: Instant, max_runtime_ms: u64,
+    deadline: Instant, max_runtime_ms: u64, weights: Option<&BTreeMap<String, u64>>,
 ) -> Result<(Vec<BoardOption>, usize), MultiBoardError> {
     let mut options = Vec::new();
     let mut evaluated_count = 0;
     let uses_two = model.machine.allowed_patterns.iter().any(|mode| matches!(mode, StagePattern::VH | StagePattern::HV));
     let uses_three = model.machine.allowed_patterns.iter().any(|mode| matches!(mode, StagePattern::VHV | StagePattern::HVH));
+    // Deeper patterns get their own generator; with 2-3 levels it never runs,
+    // so those results are exactly what they were.
+    let uses_deep = model.machine.allowed_patterns.iter().any(|mode| mode.levels() >= 4);
     for (index, stock) in model.stocks.iter().enumerate() {
         if reserved[index] >= stock.quantity { continue; }
         if deadline.elapsed().as_millis() as u64 >= max_runtime_ms { break; }
@@ -241,13 +254,71 @@ fn generate_options(
                     board.evaluated, board.board_rotated_90, board.mode, board.utilization_basis_points));
             }
         }
+        if uses_deep && (deadline.elapsed().as_millis() as u64) < max_runtime_ms {
+            let left = max_runtime_ms.saturating_sub(deadline.elapsed().as_millis() as u64);
+            if left < 100 { break; }
+            let slice = left.min(400).max(100);
+            let r = generate_deep_stage_weighted(pending, Some(&stock.id), seed, slice,
+                beam_width, max_expansions, weights).map_err(MultiBoardError::DeepStage)?;
+            evaluated_count += r.candidates_evaluated;
+            if let Some(board) = r.board {
+                options.push(candidate_from(PatternSource::DeepStage, index, model, board.pattern,
+                    board.evaluated, board.board_rotated_90, board.mode, board.utilization_basis_points));
+            }
+        }
+    }
+    if let Some(weights) = weights {
+        for option in &mut options {
+            option.placed_value = weighted_value(model, &option.evaluated, weights);
+        }
     }
     Ok((options, evaluated_count))
 }
 
+/// Piece area of a board weighted by part values.
+fn weighted_value(model: &CuttingJobModel, evaluated: &EvaluatedPattern, weights: &BTreeMap<String, u64>) -> u128 {
+    evaluated.summary.per_part_counts.iter().map(|(id, &count)| {
+        let area = model.parts.iter().find(|p| &p.id == id)
+            .map_or(0, |p| u128::from(p.width) * u128::from(p.height));
+        u128::from(count) * area * u128::from(weights.get(id).copied().unwrap_or(UNIT_VALUE))
+    }).sum()
+}
+
+/// Sequential value correction: a part placed on poorly used boards becomes
+/// more valuable, so the next pass places it earlier, in better company.
+/// The new value blends the old one with the waste factor of its boards
+/// (usable area / placed area, in thousandths); unplaced parts double.
+fn correct_values(model: &CuttingJobModel, attempt: &Attempt, weights: &mut BTreeMap<String, u64>) {
+    let mut seen: BTreeMap<&str, (u128, u128)> = BTreeMap::new();
+    for board in &attempt.boards {
+        let usable: u128 = board.evaluated.summary.usable_area_sq_units.parse().unwrap_or(0);
+        let placed: u128 = board.evaluated.summary.piece_area_sq_units.parse().unwrap_or(0);
+        if placed == 0 { continue; }
+        let factor = usable * u128::from(UNIT_VALUE) / placed;
+        for piece in &board.evaluated.pieces {
+            let area = u128::from(piece.rect.width) * u128::from(piece.rect.height);
+            let entry = seen.entry(piece.part_id.as_str()).or_insert((0, 0));
+            entry.0 += factor * area;
+            entry.1 += area;
+        }
+    }
+    for part in &model.parts {
+        let old = weights.get(&part.id).copied().unwrap_or(UNIT_VALUE);
+        let target = match seen.get(part.id.as_str()) {
+            Some(&(weighted, area)) if area > 0 => (weighted / area) as u64,
+            _ => old.saturating_mul(2),
+        };
+        let unplaced = attempt.remaining.get(&part.id).copied().unwrap_or(0) > 0;
+        let target = if unplaced { target.max(old.saturating_mul(2)) } else { target };
+        weights.insert(part.id.clone(), ((old + target) / 2).clamp(1, 1_000_000));
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn make_attempt(
     model: &CuttingJobModel, seed: u64, policy: usize, max_boards: usize,
     beam_width: usize, max_expansions: usize, started: Instant, max_runtime_ms: u64,
+    weights: Option<&BTreeMap<String, u64>>,
 ) -> Result<Attempt, MultiBoardError> {
     let mut remaining: BTreeMap<String, u32> = model.parts.iter()
         .map(|part| (part.id.clone(), part.quantity)).collect();
@@ -265,10 +336,14 @@ fn make_attempt(
         let search = pending_model(model, &remaining);
         let (options, count) = generate_options(model, &search, &reserved,
             seed.wrapping_add(boards.len() as u64 * 37), beam_width,
-            max_expansions, started, max_runtime_ms)?;
+            max_expansions, started, max_runtime_ms, weights)?;
         candidates += count;
         let selected = options.into_iter().filter(|c| c.placed_count > 0)
-            .max_by(|a, b| score_order(a, b, policy));
+            .max_by(|a, b| match weights {
+                // Value-corrected pass: most valuable board first.
+                Some(_) => a.placed_value.cmp(&b.placed_value).then_with(|| score_order(a, b, policy)),
+                None => score_order(a, b, policy),
+            });
         let Some(option) = selected else {
             if started.elapsed().as_millis() as u64 >= max_runtime_ms { interrupted = true; }
             break;
@@ -336,16 +411,24 @@ pub fn generate_multi_board(
     let mut total_candidates = 0_usize;
     let mut attempts = 0_usize;
     let mut exhausted = false;
-    for policy in 0..restarts {
+    // With 4+ cut levels the boards come out dense enough that greedy
+    // board-by-board filling strands the hard pieces on nearly empty boards.
+    // Value-corrected passes fix that; with 2-3 levels nothing changes.
+    let value_corrected = model.machine.allowed_patterns.iter().any(|m| m.levels() >= 4);
+    let passes = if value_corrected { restarts * VALUE_PASSES_PER_RESTART } else { restarts };
+    let mut weights: BTreeMap<String, u64> = model.parts.iter().map(|p| (p.id.clone(), UNIT_VALUE)).collect();
+    for pass in 0..passes {
         if (started.elapsed().as_millis() as u64) >= max_runtime_ms {
             exhausted = true;
             break;
         }
-        let attempt = make_attempt(model, seed.wrapping_add(policy as u64 * 1_000_003),
-            policy, max_boards, beam_width, max_expansions, started, max_runtime_ms)?;
+        let attempt = make_attempt(model, seed.wrapping_add(pass as u64 * 1_000_003),
+            pass, max_boards, beam_width, max_expansions, started, max_runtime_ms,
+            value_corrected.then_some(&weights))?;
         attempts += 1;
         total_candidates += attempt.candidates;
         exhausted |= attempt.interrupted;
+        if value_corrected { correct_values(model, &attempt, &mut weights); }
         if best.as_ref().is_none_or(|old| better_attempt(&attempt, old)) {
             best = Some(attempt);
         }

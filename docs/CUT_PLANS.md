@@ -148,5 +148,6 @@ actual al cargarlos.
 
 ## Limitaciones conocidas
 
-- El motor genera patrones de hasta 3 etapas (V-H-V / H-V-H); el formato admite 6 niveles.
+- Hasta 6 niveles de corte (`allowed_patterns` hasta `V-H-V-H-V-H` / `H-V-H-V-H-V`); ver `docs/MULTI_LEVEL.md`.
+- Con 4 o más niveles la optimización usa todo el tiempo máximo configurado (hasta 1,5 × en el peor caso).
 - `elapsedTime` es el tiempo real de cálculo, por lo que dos ejecuciones no dan un JSON idéntico.

@@ -110,8 +110,10 @@ fn cut_axis(direction: CutDirection) -> u8 {
     match direction { CutDirection::Vertical => 0, CutDirection::Horizontal => 1 }
 }
 fn pattern_axes(pattern: StagePattern) -> &'static [u8] {
-    match pattern { StagePattern::VH => &[0, 1], StagePattern::HV => &[1, 0],
-        StagePattern::VHV => &[0, 1, 0], StagePattern::HVH => &[1, 0, 1] }
+    const VS: [u8; 6] = [0, 1, 0, 1, 0, 1];
+    const HS: [u8; 6] = [1, 0, 1, 0, 1, 0];
+    let levels = usize::from(pattern.levels());
+    match pattern.first() { crate::model::CutDirection::Vertical => &VS[..levels], crate::model::CutDirection::Horizontal => &HS[..levels] }
 }
 
 #[derive(Clone)]

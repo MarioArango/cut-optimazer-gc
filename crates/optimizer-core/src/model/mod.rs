@@ -26,6 +26,8 @@ pub enum CutDirection {
     Horizontal,
 }
 
+/// Guillotine cutting pattern: the direction of each cutting level, always
+/// alternating. A tree may finish a branch before the last level.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum StagePattern {
     #[serde(rename = "V-H")]
@@ -36,6 +38,64 @@ pub enum StagePattern {
     VHV,
     #[serde(rename = "H-V-H")]
     HVH,
+    #[serde(rename = "V-H-V-H")]
+    VHVH,
+    #[serde(rename = "H-V-H-V")]
+    HVHV,
+    #[serde(rename = "V-H-V-H-V")]
+    VHVHV,
+    #[serde(rename = "H-V-H-V-H")]
+    HVHVH,
+    #[serde(rename = "V-H-V-H-V-H")]
+    VHVHVH,
+    #[serde(rename = "H-V-H-V-H-V")]
+    HVHVHV,
+}
+
+/// Deepest supported guillotine pattern.
+pub const MAX_CUT_LEVELS: u8 = 6;
+
+impl StagePattern {
+    pub const ALL: [StagePattern; 10] = [
+        Self::VH, Self::HV, Self::VHV, Self::HVH, Self::VHVH, Self::HVHV,
+        Self::VHVHV, Self::HVHVH, Self::VHVHVH, Self::HVHVHV,
+    ];
+
+    /// Cut direction of every level, first level first.
+    pub fn directions(self) -> &'static [CutDirection] {
+        use CutDirection::{Horizontal as H, Vertical as V};
+        const VS: [CutDirection; 6] = [V, H, V, H, V, H];
+        const HS: [CutDirection; 6] = [H, V, H, V, H, V];
+        let levels = usize::from(self.levels());
+        match self.first() {
+            V => &VS[..levels],
+            H => &HS[..levels],
+        }
+    }
+
+    /// Number of cutting levels (2..=6).
+    pub fn levels(self) -> u8 {
+        match self {
+            Self::VH | Self::HV => 2,
+            Self::VHV | Self::HVH => 3,
+            Self::VHVH | Self::HVHV => 4,
+            Self::VHVHV | Self::HVHVH => 5,
+            Self::VHVHVH | Self::HVHVHV => 6,
+        }
+    }
+
+    /// Direction of the first-level cuts.
+    pub fn first(self) -> CutDirection {
+        match self {
+            Self::VH | Self::VHV | Self::VHVH | Self::VHVHV | Self::VHVHVH => CutDirection::Vertical,
+            _ => CutDirection::Horizontal,
+        }
+    }
+
+    /// The pattern with `levels` levels starting with `first`, if supported.
+    pub fn from_levels(first: CutDirection, levels: u8) -> Option<Self> {
+        Self::ALL.into_iter().find(|p| p.first() == first && p.levels() == levels)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]

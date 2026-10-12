@@ -14,6 +14,7 @@ pub mod multi_board;
 pub mod preprocess;
 pub mod two_stage;
 pub mod three_stage;
+pub mod deep_stage;
 pub mod full_board_stacking;
 pub mod stacked_multi_board;
 pub mod production_simulator;
@@ -38,6 +39,8 @@ pub use preprocess::{preprocess_model, PreprocessError, PreprocessedJob, Preproc
 pub use layout_validation::{validate_layout, BoardAssignment, LayoutPlan, LayoutIssue, LayoutSummary, LayoutValidationReport};
 
 pub use two_stage::{generate_two_stage, GeneratorError, TwoStageBoard, TwoStageHeuristic, TwoStageResult};
+
+pub use deep_stage::{generate_deep_stage, DeepStageBoard, DeepStageError, DeepStageHeuristic, DeepStageResult};
 
 pub use three_stage::{generate_three_stage, ThreeStageError, ThreeStageBoard, ThreeStageHeuristic, ThreeStageResult};
 

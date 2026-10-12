@@ -128,13 +128,7 @@ fn rotate_margins(m: TrimMargins, rotate: bool) -> TrimMargins {
 }
 
 fn directions(mode: StagePattern) -> &'static [CutDirection] {
-    use CutDirection::{Horizontal as H, Vertical as V};
-    match mode {
-        StagePattern::VH => &[V, H],
-        StagePattern::HV => &[H, V],
-        StagePattern::VHV => &[V, H, V],
-        StagePattern::HVH => &[H, V, H],
-    }
+    mode.directions()
 }
 
 struct TreeChecker<'a, 'b> {

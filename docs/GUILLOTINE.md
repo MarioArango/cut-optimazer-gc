@@ -22,6 +22,9 @@
 | `H-V` | horizontal → vertical |
 | `V-H-V` | vertical → horizontal → vertical |
 | `H-V-H` | horizontal → vertical → horizontal |
+| `V-H-V-H`, `H-V-H-V` | 4 niveles, alternando |
+| `V-H-V-H-V`, `H-V-H-V-H` | 5 niveles, alternando |
+| `V-H-V-H-V-H`, `H-V-H-V-H-V` | 6 niveles, alternando (máximo) |
 
 El número de etapa aumenta solo cuando cambia la dirección. Son admisibles cortes repetidos de la misma dirección dentro de una etapa. Las ramas pueden terminar antes de completar todas las etapas del patrón. Se rechaza saltar etapas, cambiar la primera orientación o añadir una etapa adicional.
 

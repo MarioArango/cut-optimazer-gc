@@ -43,7 +43,8 @@ curl -s -X POST http://127.0.0.1:8080/api/v1/cut-plans \
 
 Abre `http://127.0.0.1:8080/`: en la pestaña **Proyecto** escribes materiales y piezas, ajustas la
 configuración (⚙) y pulsas **Optimizar**; la pestaña **Planos** muestra el resultado y permite
-descargarlo o imprimirlo. `viewer/index.html` también se abre sin servidor para ver planos ya generados.
+descargarlo o imprimirlo. En ⚙ eliges **Niveles máximos de corte** (2 a 6, por defecto 3;
+ver [docs/MULTI_LEVEL.md](docs/MULTI_LEVEL.md)). `viewer/index.html` también se abre sin servidor para ver planos ya generados.
 
 En `POST /api/v1/jobs` puedes enviar directamente las solicitudes de `examples/*.json` o las incluidas en la colección Postman. Por ejemplo:
 

@@ -4,8 +4,10 @@
 
 `generate_multi_board` asigna piezas pendientes a múltiples tableros físicos
 identificados por `(stock_id, stock_unit_index)`, empleando los generadores de
-2 etapas (V-H, H-V) y 3 etapas (V-H-V, H-V-H), cuando el perfil de máquina
-los permite.
+2 etapas (V-H, H-V) y 3 etapas (V-H-V, H-V-H), y el generador de 4 a 6
+niveles (`deep_stage.rs`) cuando el perfil de máquina los permite. Con patrones
+de 4+ niveles las pasadas son **con corrección de valores** (ver
+`docs/MULTI_LEVEL.md`); con 2–3 niveles el comportamiento no cambia.
 
 **No implementa todavía:** paquetes repetidos, apilado de tableros,
 apilado de franjas, LNS global ni secuenciación de seccionadora. Corresponden

@@ -17,7 +17,7 @@
 
 ## Perfil de seccionadora
 
-`MachineProfile`: kerf, longitud máxima de corte, mínimos de pieza/franja/sujeción, altura y cantidad máxima de miembros de un paquete, rotación, recortes y combinaciones `V-H`, `H-V`, `V-H-V`, `H-V-H`.
+`MachineProfile`: kerf, longitud máxima de corte, mínimos de pieza/franja/sujeción, altura y cantidad máxima de miembros de un paquete, rotación, recortes y combinaciones `V-H`, `H-V`, `V-H-V`, `H-V-H` y sus extensiones de 4, 5 y 6 niveles (`V-H-V-H` … `H-V-H-V-H-V`).
 
 `stacking.full_boards`, `stacking.strips`, `stacking.restacking`: capacidades declaradas de la máquina y del proceso de manipulación. `restacking` requiere `strips`. La compatibilidad definitiva de paquetes con mordazas, secuencia y manipulación se verificará posteriormente.
 

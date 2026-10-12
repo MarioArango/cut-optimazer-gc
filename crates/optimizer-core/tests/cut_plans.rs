@@ -96,8 +96,14 @@ fn check_plans(plans: &Value, model: &CuttingJobModel) {
         }
         let mut cuts = Vec::new();
         walk(board["cuts"].as_array().unwrap(), 1, &mut cuts);
-        let real = cuts.iter().filter(|c| c["type"] != "retal" && c.get("edge").is_none()).count();
+        // A real saw pass carries i_cut; it may take out a piece, a strip or
+        // (with 4+ levels) a remnant between pieces. Closing entries have none.
+        let real = cuts.iter().filter(|c| c.get("i_cut").is_some()).count();
         assert_eq!(board["stock_cuts"], real as u64);
+        for cut in &cuts {
+            assert_eq!(cut.get("i_cut").is_some(), cut.get("edge").is_none() && !(cut["type"] == "retal" && cut.get("dimension").is_none()),
+                       "only closing entries lack i_cut: {cut}");
+        }
         // Every piece and remnant is taken out by exactly one cut entry, and
         // a piece's cut runs half a kerf beyond its far edge.
         let produced: Vec<u64> = cuts.iter().map(|c| c["id_piece"].as_u64().unwrap()).filter(|&id| id != 0).collect();
@@ -168,4 +174,58 @@ fn engine_operation_returns_cut_plans() {
     let response: JobResponse = serde_json::from_str(&run_json(&request.to_string()).unwrap()).unwrap();
     let JobOutput::CutPlans { result } = response.output else { panic!("cut_plans output expected") };
     check_plans(&result, &rovere_model(10));
+}
+
+fn up_to(levels: u8) -> Vec<optimizer_core::model::StagePattern> {
+    optimizer_core::model::StagePattern::ALL.into_iter().filter(|m| m.levels() <= levels).collect()
+}
+
+fn deepest_level(plans: &Value) -> u64 {
+    let mut deepest = 0;
+    for board in plans["records"][0]["boards"].as_array().unwrap() {
+        let mut cuts = Vec::new();
+        walk(board["cuts"].as_array().unwrap(), 1, &mut cuts);
+        deepest = deepest.max(cuts.iter().map(|c| c["a_level"].as_u64().unwrap()).max().unwrap_or(0));
+    }
+    deepest
+}
+
+#[test]
+fn plans_with_up_to_six_levels_are_consistent() {
+    for levels in [4u8, 5, 6] {
+        let mut model = rovere_model(5);
+        model.machine.allowed_patterns = up_to(levels);
+        let plans = generate_cut_plans(&model, 42, 8_000, default_cut_plan_search()).unwrap();
+        assert_eq!(plans["complete_order"], true, "{levels} levels");
+        check_plans(&plans, &model);
+        assert!(deepest_level(&plans) <= u64::from(levels), "no cut beyond level {levels}");
+    }
+}
+
+#[test]
+fn random_orders_give_valid_plans_at_every_level() {
+    // Deterministic pseudo-random orders (no external crate).
+    let mut state = 0x2545_f491_4f6c_dd1d_u64;
+    let mut next = |n: u32| { state ^= state << 13; state ^= state >> 7; state ^= state << 17; (state % u64::from(n)) as u32 };
+    for case in 0..4 {
+        let mut model = rovere_model(1);
+        let grain = case % 2 == 0;
+        model.materials[0].directional_grain = grain;
+        model.stocks[0].grain_axis = grain.then_some(optimizer_core::model::Axis::X);
+        model.parts.truncate(1 + next(5) as usize);
+        for part in &mut model.parts {
+            part.width = (600 + next(14_000)) / 10 * 10;
+            part.height = (600 + next(9_000)) / 10 * 10;
+            part.quantity = 1 + next(8);
+            part.allow_rotate_90 = true;
+            part.grain_axis = if grain && next(2) == 0 { Some(optimizer_core::model::Axis::X) } else { None };
+        }
+        for levels in [2u8, 3, 4, 6] {
+            model.machine.allowed_patterns = up_to(levels);
+            let plans = generate_cut_plans(&model, case, 1_500, default_cut_plan_search()).unwrap();
+            assert_eq!(plans["complete_order"], true, "case {case}, {levels} levels");
+            check_plans(&plans, &model);
+            assert!(deepest_level(&plans) <= u64::from(levels));
+        }
+    }
 }

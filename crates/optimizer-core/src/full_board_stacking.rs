@@ -112,12 +112,8 @@ struct EligibleBoard {
 }
 
 fn mode_tag(mode: StagePattern) -> u8 {
-    match mode {
-        StagePattern::VH => 0,
-        StagePattern::HV => 1,
-        StagePattern::VHV => 2,
-        StagePattern::HVH => 3,
-    }
+    // Position in StagePattern::ALL: 0..=3 for the original 2/3-level patterns.
+    StagePattern::ALL.iter().position(|&m| m == mode).expect("every pattern is listed") as u8
 }
 
 fn u32_bytes(bytes: &mut Vec<u8>, value: u32) { bytes.extend_from_slice(&value.to_le_bytes()); }
